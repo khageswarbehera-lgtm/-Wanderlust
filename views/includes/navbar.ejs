@@ -1,0 +1,48 @@
+<nav class="navbar">
+
+  <!-- Logo -->
+  <div class="navbar-left">
+
+    <a href="/listings" class="navbar-logo">
+      <span class="logo-icon">W</span>
+      <span class="logo-text">Wanderlust</span>
+    </a>
+
+  </div>
+
+
+  <!-- Navigation Links -->
+  <div class="navbar-center">
+
+    <a href="/listings">
+      Home
+    </a>
+
+    <a href="/listings">
+      Explore
+    </a>
+
+    <a href="/listings/new">
+      Create Listing
+    </a>
+
+  </div>
+
+
+  <!-- Right Side -->
+  <div class="navbar-right">
+
+    <% if (currentUser) { %>
+      <span class="nav-user">Hi, <%= currentUser.username %></span>
+      <a href="/listings/new" class="nav-create-btn">+ Create</a>
+      <form action="/logout" method="POST" class="nav-logout-form">
+        <button type="submit" class="nav-logout-btn">Log out</button>
+      </form>
+    <% } else { %>
+      <a href="/login" class="nav-auth-link">Log in</a>
+      <a href="/signup" class="nav-create-btn">Sign up</a>
+    <% } %>
+
+  </div>
+
+</nav>

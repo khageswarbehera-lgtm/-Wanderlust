@@ -1,0 +1,212 @@
+/* ================================
+   FORM PAGE
+================================ */
+
+.form-container {
+  width: 90%;
+  max-width: 650px;
+
+  margin: 50px auto;
+
+  padding: 35px;
+
+  background: white;
+
+  border-radius: 18px;
+
+  border: 1px solid #eee;
+
+  box-shadow:
+    0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+
+/* ================================
+   TITLE
+================================ */
+
+.form-container h1 {
+  margin-bottom: 30px;
+
+  font-size: 30px;
+
+  color: #222;
+}
+
+
+/* ================================
+   FORM
+================================ */
+
+.form-container form {
+  display: flex;
+
+  flex-direction: column;
+}
+
+
+/* ================================
+   LABEL
+================================ */
+
+.form-container label {
+  margin-bottom: 7px;
+
+  font-size: 14px;
+
+  font-weight: 600;
+
+  color: #333;
+}
+
+
+/* ================================
+   INPUTS
+================================ */
+
+.form-container input,
+.form-container textarea {
+  width: 100%;
+
+  padding: 13px 15px;
+
+  margin-bottom: 20px;
+
+  border: 1px solid #ddd;
+
+  border-radius: 9px;
+
+  background: #fafafa;
+
+  color: #222;
+
+  font-size: 15px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.form-container textarea {
+  min-height: 130px;
+
+  resize: vertical;
+}
+
+
+/* ================================
+   FOCUS
+================================ */
+
+.form-container input:focus,
+.form-container textarea:focus {
+  outline: none;
+
+  background: white;
+
+  border-color: #ff385c;
+
+  box-shadow:
+    0 0 0 3px rgba(255, 56, 92, 0.1);
+}
+
+
+/* ================================
+   SUBMIT BUTTON
+================================ */
+
+.form-container button {
+  width: 100%;
+
+  padding: 13px;
+
+  margin-top: 5px;
+
+  border: none;
+
+  border-radius: 9px;
+
+  background: #ff385c;
+
+  color: white;
+
+  font-size: 16px;
+
+  font-weight: 600;
+
+  transition: all 0.25s ease;
+}
+
+.form-container button:hover {
+  background: #e31c5f;
+
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 6px 15px rgba(255, 56, 92, 0.25);
+}
+
+
+/* ================================
+   MOBILE
+================================ */
+
+@media (max-width: 600px) {
+
+  .form-container {
+    padding: 25px 20px;
+
+    margin: 30px auto;
+  }
+
+  .form-container h1 {
+    font-size: 25px;
+  }
+
+}
+
+.field-error {
+  margin: -14px 0 18px;
+  color: #a4122d;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.form-error {
+  margin: -10px 0 20px;
+  color: #a4122d;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.auth-switch {
+  margin: 24px 0 0;
+  color: #555;
+  text-align: center;
+}
+
+.auth-switch a {
+  color: #e31c5f;
+  font-weight: 600;
+}
+
+.current-image-preview {
+  width: 100%;
+  max-height: 220px;
+  margin: -4px 0 20px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.form-container input.is-valid,
+.form-container textarea.is-valid {
+  border-color: #198754;
+  box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.12);
+}
+
+.form-container input.is-invalid,
+.form-container textarea.is-invalid {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.12);
+}

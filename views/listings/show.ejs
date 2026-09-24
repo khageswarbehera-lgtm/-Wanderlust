@@ -1,0 +1,108 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="show-container">
+
+  <h1>
+    <%= listing.title %>
+  </h1>
+
+  <img
+    src="<%= listing.image %>"
+    alt="<%= listing.title %>"
+    class="listing-image"
+  >
+
+  <p>
+    <%= listing.description %>
+  </p>
+
+  <p>
+    📍 <%= listing.location %>,
+    <%= listing.country %>
+  </p>
+
+  <h3>
+    ₹<%= listing.price.toLocaleString("en-IN") %>
+    / night
+  </h3>
+
+  <% if (currentUser && listing.owner && listing.owner.toString() === currentUser.id) { %>
+    <div class="actions">
+      <a href="/listings/<%= listing._id %>/edit" class="edit-btn">Edit</a>
+
+      <form action="/listings/<%= listing._id %>?_method=DELETE" method="POST">
+        <button type="submit" class="delete-btn">Delete</button>
+      </form>
+    </div>
+  <% } %>
+
+  <section class="reviews-section">
+    <h2>Leave a review</h2>
+
+    <% if (currentUser) { %>
+      <form action="/listings/<%= listing._id %>/reviews" method="POST" id="review-form" data-review-form novalidate>
+      <label for="rating">Rating</label>
+      <div class="rating-control">
+        <input type="range" name="review[rating]" id="rating" min="1" max="5" step="1" value="3" required data-rating-input>
+        <output for="rating" data-rating-output>3</output><span> / 5</span>
+      </div>
+      <p class="field-error" data-field="rating" hidden></p>
+
+      <label for="comment">Your review</label>
+      <textarea name="review[comment]" id="comment" maxlength="1000" required></textarea>
+      <p class="field-error" data-field="comment" hidden></p>
+
+      <button type="submit" class="review-btn">Submit review</button>
+      </form>
+    <% } else { %>
+      <p class="no-reviews"><a href="/login">Log in</a> to leave a review.</p>
+    <% } %>
+
+    <h2>Reviews (<%= listing.reviews.length %>)</h2>
+    <% if (listing.reviews.length) { %>
+      <div class="review-list">
+        <% listing.reviews.forEach((review) => { %>
+          <article class="review-card">
+            <p class="review-rating" aria-label="Rated <%= review.rating %> out of 5">
+              <%= "★".repeat(review.rating) %><%= "☆".repeat(5 - review.rating) %>
+            </p>
+            <p><%= review.comment %></p>
+            <% if (currentUser && review.owner && review.owner.toString() === currentUser.id) { %>
+              <div class="review-actions">
+                <button type="button" class="edit-btn" data-review-edit="review-edit-<%= review._id %>" aria-expanded="false">Edit</button>
+                <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST">
+                  <button type="submit" class="delete-btn">Delete</button>
+                </form>
+              </div>
+
+              <form
+              action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=PUT"
+              method="POST"
+              id="review-edit-<%= review._id %>"
+              class="review-edit-form"
+              data-review-form
+              novalidate
+              hidden
+            >
+              <label for="rating-<%= review._id %>">Rating</label>
+              <div class="rating-control">
+                <input type="range" name="review[rating]" id="rating-<%= review._id %>" min="1" max="5" step="1" value="<%= review.rating %>" required data-rating-input>
+                <output for="rating-<%= review._id %>" data-rating-output><%= review.rating %></output><span> / 5</span>
+              </div>
+              <p class="field-error" data-field="rating" hidden></p>
+
+              <label for="comment-<%= review._id %>">Your review</label>
+              <textarea name="review[comment]" id="comment-<%= review._id %>" maxlength="1000" required><%= review.comment %></textarea>
+              <p class="field-error" data-field="comment" hidden></p>
+              <button type="submit" class="review-btn">Save changes</button>
+              </form>
+            <% } %>
+          </article>
+        <% }) %>
+      </div>
+    <% } else { %>
+      <p class="no-reviews">No reviews yet. Be the first to share your experience.</p>
+    <% } %>
+  </section>
+
+</div>

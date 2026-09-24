@@ -1,0 +1,58 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="listing-header">
+
+  <h1>Explore Listings</h1>
+
+  
+
+</div>
+
+
+<div class="listing-container">
+
+  <% listings.forEach(listing => { %>
+
+    <div class="listing-card">
+
+        <a href="/listings/<%= listing._id %>">
+
+
+      <img
+        src="<%= listing.image %>"
+        alt="<%= listing.title %>"
+      >
+
+        </a>
+
+      <div class="listing-content">
+
+        <a href="/listings/<%= listing._id %>">
+
+          <h2>
+            <%= listing.title %>
+          </h2>
+
+        </a>
+
+        <p>
+          📍 <%= listing.location %>,
+          <%= listing.country %>
+        </p>
+
+        <p>
+          <%= listing.description %>
+        </p>
+
+        <p>
+         <b>₹<%= listing.price.toLocaleString("en-IN") %></b>
+          / night
+        </p>
+
+      </div>
+
+    </div>
+
+  <% }) %>
+
+</div>

@@ -1,0 +1,311 @@
+/* ========================================
+   LISTING HEADER
+======================================== */
+
+.listing-header {
+  width: 90%;
+  max-width: 1200px;
+
+  margin: 40px auto 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 20px;
+}
+
+.listing-header h1 {
+  font-size: 32px;
+  color: #222;
+}
+
+
+/* ========================================
+   CREATE BUTTON
+======================================== */
+
+.create-btn {
+  display: inline-block;
+
+  padding: 11px 20px;
+
+  background-color: #ff385c;
+  color: white;
+
+  border-radius: 25px;
+
+  font-size: 14px;
+  font-weight: 600;
+
+  transition: 0.25s ease;
+}
+
+.create-btn:hover {
+  background-color: #e31c5f;
+  transform: translateY(-2px);
+}
+
+
+/* ========================================
+   LISTING GRID
+======================================== */
+
+.listing-container {
+  width: 90%;
+  max-width: 1200px;
+
+  margin: 0 auto 50px;
+
+  display: grid;
+
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(280px, 1fr)
+  );
+
+  gap: 28px;
+}
+
+
+/* ========================================
+   LISTING CARD
+======================================== */
+
+.listing-card {
+  width: 100%;
+
+  background-color: white;
+
+  border: 1px solid #eeeeee;
+
+  border-radius: 16px;
+
+  overflow: hidden;
+
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.07);
+
+  transition: transform 0.3s ease,
+              box-shadow 0.3s ease;
+}
+
+.listing-card:hover {
+  transform: translateY(-5px);
+
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
+}
+
+
+/* ========================================
+   LISTING IMAGE
+======================================== */
+
+.listing-card img {
+  display: block;
+
+  width: 100% !important;
+
+  height: 220px !important;
+
+  max-height: 220px;
+
+  object-fit: cover;
+
+  object-position: center;
+
+  transition: transform 0.4s ease;
+}
+
+.listing-card:hover img {
+  transform: scale(1.04);
+}
+
+
+/* ========================================
+   LISTING CONTENT
+======================================== */
+
+.listing-content {
+  padding: 18px;
+}
+
+
+/* Title */
+
+.title-link {
+  color: #222;
+}
+
+.listing-title {
+  margin: 0 0 8px;
+
+  font-size: 20px;
+
+  font-weight: 650;
+
+  transition: color 0.2s ease;
+}
+
+.title-link:hover .listing-title {
+  color: #ff385c;
+}
+
+
+/* Location */
+
+.location {
+  margin: 0 0 10px;
+
+  color: #666;
+
+  font-size: 14px;
+}
+
+
+/* Description */
+
+.description {
+  margin: 0 0 12px;
+
+  color: #666;
+
+  font-size: 14px;
+
+  line-height: 1.5;
+
+  display: -webkit-box;
+
+  -webkit-line-clamp: 2;
+
+  line-clamp: 2;
+
+  -webkit-box-orient: vertical;
+
+  overflow: hidden;
+}
+
+
+/* Price */
+
+.price {
+  margin: 8px 0 0;
+
+  color: #222;
+
+  font-size: 18px;
+
+  font-weight: 700;
+}
+
+.price span {
+  color: #777;
+
+  font-size: 13px;
+
+  font-weight: 400;
+}
+
+
+/* ========================================
+   EDIT / DELETE
+======================================== */
+
+.actions {
+  display: flex;
+
+  align-items: center;
+
+  gap: 10px;
+
+  margin-top: 16px;
+}
+
+.actions form {
+  margin: 0;
+}
+
+
+/* Edit */
+
+.edit-btn {
+  display: inline-block;
+
+  padding: 8px 15px;
+
+  background-color: #222;
+
+  color: white;
+
+  border-radius: 7px;
+
+  font-size: 13px;
+
+  transition: 0.2s ease;
+}
+
+.edit-btn:hover {
+  background-color: #444;
+}
+
+
+/* Delete */
+
+.delete-btn {
+  padding: 8px 15px;
+
+  background-color: white;
+
+  color: #e31c5f;
+
+  border: 1px solid #ff385c;
+
+  border-radius: 7px;
+
+  font-size: 13px;
+
+  cursor: pointer;
+
+  transition: 0.2s ease;
+}
+
+.delete-btn:hover {
+  background-color: #ff385c;
+
+  color: white;
+}
+
+
+/* ========================================
+   MOBILE
+======================================== */
+
+@media (max-width: 600px) {
+
+  .listing-header {
+    width: 92%;
+
+    flex-direction: column;
+
+    align-items: flex-start;
+
+    margin-top: 30px;
+  }
+
+  .listing-header h1 {
+    font-size: 27px;
+  }
+
+  .listing-container {
+    width: 92%;
+
+    grid-template-columns: 1fr;
+
+    gap: 20px;
+  }
+
+  .listing-card img {
+    height: 210px !important;
+    max-height: 210px;
+  }
+
+}

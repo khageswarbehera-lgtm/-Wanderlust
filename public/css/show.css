@@ -1,0 +1,280 @@
+/* ================================
+   SHOW PAGE
+================================ */
+
+.show-container {
+  width: 90%;
+  max-width: 950px;
+
+  margin: 45px auto;
+}
+
+
+/* ================================
+   BACK BUTTON
+================================ */
+
+.back-btn {
+  display: inline-block;
+
+  margin-bottom: 20px;
+
+  color: #666;
+
+  font-size: 14px;
+
+  transition: color 0.2s ease;
+}
+
+.back-btn:hover {
+  color: #ff385c;
+}
+
+
+/* ================================
+   TITLE
+================================ */
+
+.show-container > h1 {
+  font-size: 36px;
+
+  margin-bottom: 8px;
+}
+
+.show-container > .location {
+  margin-bottom: 25px;
+}
+
+
+/* ================================
+   MAIN IMAGE
+================================ */
+
+.listing-image {
+  width: 100%;
+
+  height: 500px;
+
+  object-fit: cover;
+
+  border-radius: 18px;
+
+  box-shadow:
+    0 8px 25px rgba(0, 0, 0, 0.12);
+
+  margin-bottom: 30px;
+}
+
+
+/* ================================
+   DETAILS
+================================ */
+
+.listing-details {
+  background: white;
+
+  padding: 30px;
+
+  border-radius: 15px;
+
+  border: 1px solid #eee;
+
+  box-shadow:
+    0 5px 20px rgba(0, 0, 0, 0.06);
+}
+
+.listing-details h2 {
+  margin-bottom: 12px;
+
+  font-size: 24px;
+}
+
+.listing-details .description {
+  display: block;
+
+  color: #555;
+
+  font-size: 16px;
+
+  margin-bottom: 20px;
+}
+
+.listing-details .price {
+  font-size: 24px;
+
+  color: #ff385c;
+}
+
+
+/* ================================
+   MOBILE
+================================ */
+
+@media (max-width: 700px) {
+
+  .show-container > h1 {
+    font-size: 28px;
+  }
+
+  .listing-image {
+    height: 300px;
+
+    border-radius: 12px;
+  }
+
+  .listing-details {
+    padding: 20px;
+  }
+
+}
+
+/* ================================
+   REVIEWS
+================================ */
+
+.reviews-section {
+  margin-top: 42px;
+  padding-top: 30px;
+  border-top: 1px solid #eee;
+}
+
+.reviews-section h2 {
+  margin: 0 0 16px;
+}
+
+#review-form {
+  display: flex;
+  flex-direction: column;
+  max-width: 650px;
+  margin-bottom: 36px;
+}
+
+#review-form label {
+  margin-bottom: 7px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#review-form textarea,
+.review-edit-form textarea {
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  border: 1px solid #ddd;
+  border-radius: 9px;
+  font: inherit;
+}
+
+#review-form textarea,
+.review-edit-form textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+#review-form input.is-valid,
+#review-form textarea.is-valid {
+  border-color: #198754;
+}
+
+#review-form input.is-invalid,
+#review-form textarea.is-invalid {
+  border-color: #dc3545;
+}
+
+.review-btn {
+  align-self: flex-start;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 8px;
+  background: #ff385c;
+  color: white;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.review-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.review-card {
+  padding: 18px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background: white;
+}
+
+.review-card p:last-child,
+.no-reviews {
+  margin: 0;
+  color: #555;
+  white-space: pre-wrap;
+}
+
+.review-rating {
+  margin: 0 0 10px;
+  color: #ff385c;
+  font-size: 19px;
+  letter-spacing: 2px;
+}
+
+.rating-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.rating-control input[type="range"] {
+  flex: 1;
+  accent-color: #ff385c;
+}
+
+.rating-control output {
+  min-width: 18px;
+  font-weight: 700;
+  color: #ff385c;
+}
+
+.review-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.review-actions form {
+  margin: 0;
+}
+
+.review-actions .edit-btn,
+.review-actions .delete-btn {
+  border: 0;
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+}
+
+.review-actions .edit-btn {
+  background: #555;
+}
+
+.review-actions .delete-btn {
+  background: #c83c4f;
+}
+
+.review-edit-form {
+  display: flex;
+  flex-direction: column;
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid #eee;
+}
+
+.review-edit-form label {
+  margin-bottom: 7px;
+  font-size: 14px;
+  font-weight: 600;
+}

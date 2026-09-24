@@ -1,0 +1,24 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="form-container auth-container">
+  <h1>Create your account</h1>
+
+  <% if (error) { %>
+    <p class="form-error"><%= error %></p>
+  <% } %>
+
+  <form action="/signup" method="POST">
+    <label for="username">Username</label>
+    <input id="username" type="text" name="username" value="<%= values.username || "" %>" minlength="3" maxlength="30" required autofocus>
+
+    <label for="email">Email</label>
+    <input id="email" type="email" name="email" value="<%= values.email || "" %>" required>
+
+    <label for="password">Password</label>
+    <input id="password" type="password" name="password" minlength="8" required>
+
+    <button type="submit">Sign up</button>
+  </form>
+
+  <p class="auth-switch">Already have an account? <a href="/login">Log in</a></p>
+</div>

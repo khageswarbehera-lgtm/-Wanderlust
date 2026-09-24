@@ -1,0 +1,85 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="form-container">
+
+  <h1>Edit Listing</h1>
+
+  <form
+    action="/listings/<%= listing._id %>?_method=PUT"
+    method="POST"
+    enctype="multipart/form-data"
+    id="listing-form"
+    novalidate
+  >
+
+    <label>Title</label>
+
+    <input
+      type="text"
+      name="title"
+      value="<%= listing.title %>"
+      required
+    >
+    <p class="field-error" data-field="title" <%= errors.title ? "" : "hidden" %>><%= errors.title || "" %></p>
+
+
+    <label>Description</label>
+
+    <textarea name="description" required><%= listing.description %></textarea>
+    <p class="field-error" data-field="description" <%= errors.description ? "" : "hidden" %>><%= errors.description || "" %></p>
+
+
+    <label>Price</label>
+
+    <input
+      type="number"
+      name="price"
+      value="<%= listing.price %>"
+      min="0"
+      step="any"
+      required
+    >
+    <p class="field-error" data-field="price" <%= errors.price ? "" : "hidden" %>><%= errors.price || "" %></p>
+
+
+    <label for="image">Replace image (optional)</label>
+
+    <input
+      type="file"
+      name="image"
+      id="image"
+      accept="image/*"
+    >
+    <img src="<%= listing.image %>" alt="Current listing image" class="current-image-preview">
+    <p class="field-error" data-field="image" <%= errors.image ? "" : "hidden" %>><%= errors.image || "" %></p>
+
+
+    <label>Location</label>
+
+    <input
+      type="text"
+      name="location"
+      value="<%= listing.location %>"
+      required
+    >
+    <p class="field-error" data-field="location" <%= errors.location ? "" : "hidden" %>><%= errors.location || "" %></p>
+
+
+    <label>Country</label>
+
+    <input
+      type="text"
+      name="country"
+      value="<%= listing.country %>"
+      required
+    >
+    <p class="field-error" data-field="country" <%= errors.country ? "" : "hidden" %>><%= errors.country || "" %></p>
+
+
+    <button type="submit">
+      Update Listing
+    </button>
+
+  </form>
+
+</div>

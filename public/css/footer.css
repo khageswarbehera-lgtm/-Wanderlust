@@ -1,0 +1,154 @@
+/* ================================
+   FOOTER
+================================ */
+
+.footer {
+  margin-top: 70px;
+
+  background: #171717;
+  color: white;
+}
+
+
+/* ================================
+   FOOTER CONTAINER
+================================ */
+
+.footer-container {
+  width: 90%;
+  max-width: 1200px;
+
+  margin: auto;
+
+  padding: 55px 0 45px;
+
+  display: grid;
+
+  grid-template-columns:
+    2fr 1fr 1fr;
+
+  gap: 60px;
+}
+
+
+/* ================================
+   BRAND
+================================ */
+
+.footer-brand h2 {
+  color: #ff385c;
+
+  font-size: 27px;
+
+  margin-bottom: 12px;
+}
+
+.footer-brand p {
+  max-width: 350px;
+
+  color: #aaa;
+
+  line-height: 1.7;
+}
+
+
+/* ================================
+   LINKS
+================================ */
+
+.footer-links h3,
+.footer-social h3 {
+  margin-bottom: 18px;
+
+  font-size: 17px;
+}
+
+.footer-links {
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+}
+
+.footer-links a {
+  color: #aaa;
+
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: #ff385c;
+}
+
+
+/* ================================
+   SOCIAL ICONS
+================================ */
+
+.social-icons {
+  display: flex;
+
+  gap: 12px;
+}
+
+.social-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
+
+  background: #292929;
+
+  color: white;
+
+  font-size: 17px;
+
+  transition: all 0.25s ease;
+}
+
+.social-icon:hover {
+  background: #ff385c;
+
+  color: white;
+
+  transform: translateY(-4px);
+}
+
+
+/* ================================
+   BOTTOM
+================================ */
+
+.footer-bottom {
+  border-top: 1px solid #333;
+
+  padding: 20px 5%;
+
+  text-align: center;
+
+  color: #888;
+
+  font-size: 14px;
+}
+
+
+/* ================================
+   MOBILE
+================================ */
+
+@media (max-width: 700px) {
+
+  .footer-container {
+    grid-template-columns: 1fr;
+
+    gap: 35px;
+
+    padding: 40px 0;
+  }
+
+}

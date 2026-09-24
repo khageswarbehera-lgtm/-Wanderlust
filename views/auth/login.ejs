@@ -1,0 +1,23 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="form-container auth-container">
+  <h1>Welcome back</h1>
+
+  <% if (error) { %>
+    <p class="form-error"><%= error %></p>
+  <% } %>
+
+  <form action="/login" method="POST">
+    <input type="hidden" name="returnTo" value="<%= values.returnTo || "" %>">
+
+    <label for="email">Email</label>
+    <input id="email" type="email" name="email" value="<%= values.email || "" %>" required autofocus>
+
+    <label for="password">Password</label>
+    <input id="password" type="password" name="password" required>
+
+    <button type="submit">Log in</button>
+  </form>
+
+  <p class="auth-switch">New to Wanderlust? <a href="/signup">Create an account</a></p>
+</div>
