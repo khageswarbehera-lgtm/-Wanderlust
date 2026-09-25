@@ -6,6 +6,8 @@ const ejsMate = require("ejs-mate");
 
 const listingRoutes = require("./routes/listingRoutes");
 const authRoutes = require("./routes/authRoutes");
+const healthRoutes = require("./routes/healthrote");
+
 const errorHandler = require("./middleware/errorHandler");
 const { isProduction, sessionSecret } = require("./config/env");
 const validateListingRequest = require("./middleware/validateListingRequest");
@@ -79,6 +81,7 @@ app.get("/", (req, res) => {
 // ================= ROUTES =================
 
 app.use(authRoutes);
+app.use(healthRoutes);
 
 app.use(
   "/listings",
