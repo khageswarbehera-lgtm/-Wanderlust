@@ -5,7 +5,7 @@ const { port, host } = require("./config/env");
 const startServer = async () => {
   try {
     await connectDatabase();
-    app.listen(port, host, () => {
+    app.listen(port, () => {
       console.log(`Server running at http://${host}:${port}`);
     });
   } catch (error) {
