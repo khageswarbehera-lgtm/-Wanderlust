@@ -2,7 +2,13 @@ const mongoose = require("mongoose");
 const { dbUrl } = require("./env");
 
 const connectDatabase = async () => {
-  await mongoose.connect(dbUrl);
+  mongoose.set("strictQuery", true);
+
+  await mongoose.connect(dbUrl, {
+    serverSelectionTimeoutMS: 5000,
+    autoIndex: true
+  });
+
   console.log("Database connected");
 };
 

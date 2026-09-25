@@ -14,6 +14,7 @@ const uploadImage = require("./middleware/uploadImage");
 
 const app = express();
 
+app.set("trust proxy", 1);
 
 // ================= EJS-MATE =================
 
@@ -52,9 +53,10 @@ app.use(session({
   secret: sessionSecret,
   resave: false,
   saveUninitialized: false,
+  proxy: isProduction,
   cookie: {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: isProduction ? "none" : "lax",
     secure: isProduction,
     maxAge: 1000 * 60 * 60 * 24 * 7
   }
