@@ -130,8 +130,10 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
   mongoose = require("mongoose");
   const app = require("../app");
   const { MongoStore } = require("connect-mongo");
+  const { initializeAuthRateLimits } = require("../middleware/authRateLimit");
   await mongoose.connect(testMongoUri, { serverSelectionTimeoutMS: 5000 });
   assert.equal(mongoose.connection.name, dbName);
+  await initializeAuthRateLimits();
   app.configureSessionStore(MongoStore.create({
     client: mongoose.connection.getClient(),
     dbName,
@@ -297,6 +299,23 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
   const expiredVerification = await pendingClient.postForm("/verify-email", { code: pendingCode });
   assertStatus(expiredVerification, 400);
   assert.equal((await User.findById(pendingUser._id)).emailVerified, false);
+  const restartedSignup = await pendingClient.postForm("/signup", {
+    username: "pending-verification",
+    email: "pending@example.test",
+    password: "replacement-pending-password"
+  });
+  assertStatus(restartedSignup, 200);
+  assert.match(await restartedSignup.text(), /A new verification code was sent/);
+  const restartedCode = sentCodes.at(-1).code;
+  assert.notEqual(restartedCode, pendingCode);
+  const updatedPendingUser = await User.findById(pendingUser._id);
+  assert.ok(await bcrypt.compare("replacement-pending-password", updatedPendingUser.password));
+
+  const oldPendingCode = await pendingClient.postForm("/verify-email", { code: pendingCode });
+  assertStatus(oldPendingCode, 400);
+  const completedRestart = await pendingClient.postForm("/verify-email", { code: restartedCode });
+  assertStatus(completedRestart, 302);
+  assert.equal((await User.findById(pendingUser._id)).emailVerified, true);
 
   const anonymousCreate = await unauthenticated.request("/listings", {
     method: "POST",
@@ -513,4 +532,24 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
   const afterLogout = await owner.request("/listings/new");
   assertStatus(afterLogout, 302);
   assert.match(afterLogout.headers.get("location"), /^\/login\?/);
+
+  for (let attempt = 0; attempt < 7; attempt++) {
+    const failedLogin = await unauthenticated.postForm("/login", {
+      email: `missing-${attempt}@example.test`,
+      password: "not-a-valid-password"
+    });
+    assertStatus(failedLogin, 400);
+  }
+  const limitedLoginClient = new TestClient(owner.baseUrl);
+  const limitedLogin = await limitedLoginClient.postForm("/login", {
+    email: "missing-final@example.test",
+    password: "not-a-valid-password"
+  });
+  assertStatus(limitedLogin, 429);
+  assert.ok(Number(limitedLogin.headers.get("retry-after")) > 0);
+  assert.match(await limitedLogin.text(), /Too many attempts/);
+  const rateLimitRecords = await mongoose.connection.collection("auth_rate_limits")
+    .find({}).toArray();
+  assert.ok(rateLimitRecords.length > 0);
+  assert.ok(rateLimitRecords.every((record) => /^[a-f\d]{64}$/i.test(record._id)));
 });

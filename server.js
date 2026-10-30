@@ -2,6 +2,7 @@ const app = require("./app");
 const connectDatabase = require("./config/database");
 const mongoose = require("mongoose");
 const { MongoStore } = require("connect-mongo");
+const { initializeAuthRateLimits } = require("./middleware/authRateLimit");
 const { port, host } = require("./config/env");
 
 let server;
@@ -39,6 +40,7 @@ process.once("SIGINT", () => void shutdown("SIGINT"));
 const startServer = async () => {
   try {
     await connectDatabase();
+    await initializeAuthRateLimits();
     const sessionStore = MongoStore.create({
       client: mongoose.connection.getClient(),
       dbName: mongoose.connection.name,

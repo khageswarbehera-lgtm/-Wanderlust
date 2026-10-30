@@ -139,29 +139,98 @@ module.exports.signup = async (req, res, next) => {
     return renderSignup(res, values, "Email verification is temporarily unavailable. Please try again later.");
   }
 
-  const existingUser = await User.findOne({
-    $or: [{ username }, { email: email.toLowerCase() }]
-  });
+  const existingEmailUser = await User.findOne({ email });
 
-  if (existingUser) {
-    if (
-      existingUser.email === email &&
-      !existingUser.emailVerified &&
-      await bcrypt.compare(password, existingUser.password)
-    ) {
+  if (existingEmailUser) {
+    if (existingEmailUser.emailVerified) {
+      return renderSignup(res, values, "That email is already in use.");
+    }
+
+    const now = new Date();
+    const hasActiveCode = existingEmailUser.emailVerificationCodeHash &&
+      existingEmailUser.emailVerificationExpires > now &&
+      existingEmailUser.emailVerificationAttempts < 5;
+
+    if (hasActiveCode) {
+      if (!await bcrypt.compare(password, existingEmailUser.password)) {
+        return renderSignup(res, values, "That email is already in use.");
+      }
+
       try {
-        await sendVerificationCode(existingUser);
+        await sendVerificationCode(existingEmailUser);
       } catch (error) {
         if (!(error instanceof EmailDeliveryError)) throw error;
         logEmailDeliveryFailure("verification", error);
         return renderSignup(res, values, "Could not send a verification code. Please try again.");
       }
       return startVerificationSession(
-        req, existingUser, res, next, "A new verification code was sent to your email."
+        req, existingEmailUser, res, next, "A new verification code was sent to your email."
       );
     }
-    const field = existingUser.username === username ? "username" : "email";
-    return renderSignup(res, values, `That ${field} is already in use.`);
+
+    const usernameOwner = await User.findOne({
+      username,
+      _id: { $ne: existingEmailUser._id }
+    });
+    if (usernameOwner) {
+      return renderSignup(res, values, "That username is already in use.");
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    let restartedUser;
+    try {
+      restartedUser = await User.findOneAndUpdate(
+        {
+          _id: existingEmailUser._id,
+          emailVerified: { $ne: true },
+          $or: [
+            { emailVerificationCodeHash: { $exists: false } },
+            { emailVerificationExpires: { $exists: false } },
+            { emailVerificationExpires: { $lte: now } },
+            { emailVerificationAttempts: { $gte: 5 } }
+          ]
+        },
+        {
+          $set: {
+            username,
+            password: passwordHash,
+            emailVerificationAttempts: 0
+          },
+          $unset: {
+            emailVerificationCodeHash: 1,
+            emailVerificationExpires: 1,
+            passwordResetCodeHash: 1,
+            passwordResetExpires: 1
+          }
+        },
+        { returnDocument: "after", runValidators: true }
+      );
+    } catch (error) {
+      if (error.code === 11000) {
+        return renderSignup(res, values, "That username is already in use.");
+      }
+      throw error;
+    }
+
+    if (!restartedUser) {
+      return renderSignup(res, values, "A verification request is already in progress. Please try again.");
+    }
+
+    try {
+      await sendVerificationCode(restartedUser);
+    } catch (error) {
+      if (!(error instanceof EmailDeliveryError)) throw error;
+      logEmailDeliveryFailure("verification", error);
+      return renderSignup(res, values, "Could not send a verification code. Please try again.");
+    }
+    return startVerificationSession(
+      req, restartedUser, res, next, "A new verification code was sent to your email."
+    );
+  }
+
+  const existingUsername = await User.findOne({ username });
+  if (existingUsername) {
+    return renderSignup(res, values, "That username is already in use.");
   }
 
   const passwordHash = await bcrypt.hash(password, 12);

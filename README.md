@@ -101,7 +101,8 @@ Production sessions are stored in the same MongoDB database for seven days; Mong
 
 ## Known limitations
 
-- There is no request-level authentication rate limiter. Verification and password-reset codes expire after 10 minutes and allow up to five failed code attempts, but that is not a general login or endpoint rate limit.
+- Authentication mutation endpoints have MongoDB-backed per-IP rate limits: signup (5/hour), login (10/15 minutes), email verification and reset (10/15 minutes each), verification resend (3/hour), password recovery request (5/hour), and logout (10/15 minutes). A `429` response includes `Retry-After`. Verification and password-reset codes also expire after 10 minutes and allow up to five failed code attempts. Limits are fixed in code, not configurable through environment variables; production deployments must use the configured trusted proxy so client IPs are identified correctly.
+- An unverified signup can be restarted after its verification code expires or is exhausted, using a new password and username. A fresh code is sent to the email address, and verification remains required before login.
 - Origin checks apply only when a mutating request includes an `Origin` header. The app does not configure CORS or provide a separate CSRF-token middleware.
 - The app uses Express's in-memory session store in development unless configured otherwise; those sessions are not durable across restarts and should not be used for a multi-instance deployment. The integration suite explicitly configures a MongoDB session store against its temporary test database.
 - The test suite uses a temporary MongoDB instance and stubs email. It does not validate connectivity to a production MongoDB cluster, live SMTP delivery, S3 permissions, a deployment proxy, or a full production browser workflow.
