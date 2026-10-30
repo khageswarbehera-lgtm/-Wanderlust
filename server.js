@@ -3,7 +3,9 @@ const connectDatabase = require("./config/database");
 const mongoose = require("mongoose");
 const { MongoStore } = require("connect-mongo");
 const { initializeAuthRateLimits } = require("./middleware/authRateLimit");
-const { port, host } = require("./config/env");
+
+const port = process.env.PORT || 3000;
+const host = "0.0.0.0";
 
 let server;
 let shutdownStarted = false;
@@ -59,7 +61,7 @@ const startServer = async () => {
       server = app.listen(port, host, resolve);
       server.once("error", reject);
     });
-    console.log(`Server listening on port ${port}.`);
+    console.log(`Server listening on ${host}:${port}.`);
   } catch (error) {
     console.error("Application startup failed.");
     await mongoose.disconnect().catch(() => {
