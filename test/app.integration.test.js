@@ -162,6 +162,9 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
     }
   });
   assertStatus(blockedSignup, 403);
+  const blockedSignupHtml = await blockedSignup.text();
+  assert.match(blockedSignupHtml, /Cross-origin request rejected/);
+  assert.doesNotMatch(blockedSignupHtml, /currentUser is not defined/);
   assert.equal(await require("../models/user").countDocuments(), 0);
 
   const signupAndVerify = async (client, username, email) => {
