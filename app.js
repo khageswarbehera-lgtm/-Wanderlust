@@ -95,6 +95,14 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
+  const sessionUser = req.session.userId
+    ? { id: req.session.userId, username: req.session.username }
+    : null;
+  res.locals.currentUser = req.user || sessionUser || null;
+  next();
+});
+
+app.use((req, res, next) => {
   if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
     return next();
   }
@@ -114,13 +122,6 @@ app.use((req, res, next) => {
   const error = new Error("Cross-origin request rejected.");
   error.status = 403;
   next(error);
-});
-
-app.use((req, res, next) => {
-  res.locals.currentUser = req.session.userId
-    ? { id: req.session.userId, username: req.session.username }
-    : null;
-  next();
 });
 
 // ================= HOME =================

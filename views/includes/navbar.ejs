@@ -1,3 +1,5 @@
+<% const navbarCurrentUser = typeof currentUser === "undefined" ? null : currentUser; %>
+
 <nav class="navbar">
 
   <!-- Logo -->
@@ -32,8 +34,8 @@
   <!-- Right Side -->
   <div class="navbar-right">
 
-    <% if (currentUser) { %>
-      <span class="nav-user">Hi, <%= currentUser.username %></span>
+    <% if (navbarCurrentUser) { %>
+      <span class="nav-user">Hi, <%= navbarCurrentUser.username %></span>
       <a href="/listings/new" class="nav-create-btn">+ Create</a>
       <form action="/logout" method="POST" class="nav-logout-form">
         <button type="submit" class="nav-logout-btn">Log out</button>

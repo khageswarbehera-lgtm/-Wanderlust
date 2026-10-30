@@ -24,6 +24,7 @@ module.exports = (err, req, res, next) => {
 
   console.error("Request failed", { status });
 
+  res.locals.currentUser = res.locals.currentUser ?? req.user ?? null;
   res.status(status).render("error", { status, message });
 
 };

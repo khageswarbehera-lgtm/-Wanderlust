@@ -9,7 +9,7 @@ const loadProductionConfig = (overrides = {}) => {
     NODE_ENV: "production",
     IMAGE_STORAGE: "local",
     MONGODB_URI: "mongodb+srv://db.example.test/wanderlust",
-    SESSION_SECRET: crypto.randomBytes(48).toString("hex"),
+    SESSION_SECRET: crypto.randomBytes(48).toString("base64url"),
     ...overrides
   };
   const result = spawnSync(process.execPath, ["-e", "require('./config/env')"], {

@@ -5,6 +5,7 @@ const crypto = require("node:crypto");
 const fs = require("node:fs/promises");
 const os = require("node:os");
 const path = require("node:path");
+const { spawn } = require("node:child_process");
 const { MongoMemoryServer } = require("mongodb-memory-server");
 
 const assertStatus = (response, expected) =>
@@ -171,10 +172,16 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
     });
     assertStatus(signup, 200);
     assert.match(signup.headers.get("set-cookie"), /SameSite=Lax/i);
-    assert.match(await signup.text(), /Verify your email/);
+    const signupHtml = await signup.text();
+    assert.match(signupHtml, /Verify your email/);
+    assert.match(signupHtml, /Log in/);
     const code = sentCodes.at(-1);
     assert.equal(code.email, email);
     assert.equal(code.purpose, "verification");
+
+    const verificationPage = await client.request("/verify-email");
+    assertStatus(verificationPage, 200);
+    assert.match(await verificationPage.text(), /Log in/);
 
     const verify = await client.postForm("/verify-email", { code: code.code });
     assertStatus(verify, 302);
@@ -192,6 +199,15 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
   assert.equal(await User.countDocuments(), 3);
 
   const unauthenticated = new TestClient(owner.baseUrl);
+  for (const route of ["/signup", "/login", "/forgot-password"]) {
+    const authPage = await unauthenticated.request(route);
+    assertStatus(authPage, 200);
+    assert.match(await authPage.text(), /Log in|Sign up/);
+  }
+  const missingPage = await unauthenticated.request("/missing-page");
+  assertStatus(missingPage, 404);
+  assert.match(await missingPage.text(), /Page not found/);
+
   const invalidLogin = await unauthenticated.postForm("/login", {
     email: "owner@example.test",
     password: "incorrect-password"
@@ -208,6 +224,11 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
   assertStatus(login, 302);
   assert.equal(login.headers.get("location"), "/listings");
   assert.ok(loginClient.cookie);
+  const authenticatedPage = await loginClient.request("/listings");
+  assertStatus(authenticatedPage, 200);
+  const authenticatedPageHtml = await authenticatedPage.text();
+  assert.match(authenticatedPageHtml, /Hi, listing-owner/);
+  assert.match(authenticatedPageHtml, /Log out/);
 
   const unknownAccountRecovery = await unauthenticated.postForm("/forgot-password", {
     email: "missing@example.test"
@@ -529,6 +550,9 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
   const logout = await owner.postForm("/logout", {});
   assertStatus(logout, 302);
   assert.equal(logout.headers.get("location"), "/listings");
+  const loggedOutPage = await owner.request("/signup");
+  assertStatus(loggedOutPage, 200);
+  assert.match(await loggedOutPage.text(), /Sign up/);
   const afterLogout = await owner.request("/listings/new");
   assertStatus(afterLogout, 302);
   assert.match(afterLogout.headers.get("location"), /^\/login\?/);
@@ -552,4 +576,62 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
     .find({}).toArray();
   assert.ok(rateLimitRecords.length > 0);
   assert.ok(rateLimitRecords.every((record) => /^[a-f\d]{64}$/i.test(record._id)));
+
+  const startupPort = 30000 + crypto.randomInt(20000);
+  const startupServer = spawn(process.execPath, ["server.js"], {
+    cwd: path.join(__dirname, ".."),
+    env: {
+      ...process.env,
+      NODE_ENV: "test",
+      MONGODB_URI: testMongoUri,
+      IMAGE_STORAGE: "local",
+      IMAGE_UPLOAD_DIRECTORY: uploadDirectory,
+      SESSION_SECRET: `startup-test-${crypto.randomUUID()}`,
+      PORT: String(startupPort),
+      HOST: "127.0.0.1"
+    },
+    stdio: ["ignore", "pipe", "pipe"]
+  });
+  let startupOutput = "";
+  const startupReady = new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error("Server startup smoke test timed out.")), 15000);
+    const handleOutput = (chunk) => {
+      startupOutput += chunk.toString();
+      if (startupOutput.includes(`Server listening on 0.0.0.0:${startupPort}.`)) {
+        clearTimeout(timeout);
+        resolve();
+      }
+    };
+    startupServer.stdout.on("data", handleOutput);
+    startupServer.stderr.on("data", handleOutput);
+    startupServer.once("error", (error) => {
+      clearTimeout(timeout);
+      reject(error);
+    });
+    startupServer.once("exit", (code) => {
+      clearTimeout(timeout);
+      reject(new Error(`Server exited before becoming ready (code ${code}).`));
+    });
+  });
+
+  try {
+    await startupReady;
+    const health = await fetch(`http://127.0.0.1:${startupPort}/health`);
+    assertStatus(health, 200);
+    assert.deepEqual(await health.json(), {
+      status: "success",
+      message: "Server is up and running"
+    });
+  } finally {
+    if (startupServer.exitCode === null) {
+      startupServer.kill("SIGTERM");
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Server did not stop after SIGTERM.")), 12000);
+        startupServer.once("exit", () => {
+          clearTimeout(timeout);
+          resolve();
+        });
+      });
+    }
+  }
 });

@@ -18,7 +18,6 @@ const s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
 const smtpSecureValue = process.env.SMTP_SECURE;
 const sessionSecret = process.env.SESSION_SECRET || "development-session-secret";
 const port = process.env.PORT === undefined ? 3000 : Number(process.env.PORT);
-const host = process.env.HOST || "0.0.0.0";
 
 if (!Number.isInteger(mailPort) || mailPort < 1 || mailPort > 65535) {
   throw new Error("SMTP_PORT must be a valid TCP port.");
@@ -114,8 +113,6 @@ if (!process.env.MONGODB_URI && !isProduction) {
 }
 
 module.exports = {
-  port,
-  host,
   dbUrl,
   smtpHost: process.env.SMTP_HOST,
   smtpPort: mailPort,
