@@ -61,10 +61,28 @@
 
   grid-template-columns: repeat(
     auto-fit,
-    minmax(280px, 1fr)
+    minmax(min(100%, 260px), 1fr)
   );
 
   gap: 28px;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  padding: 42px 24px;
+  border: 1px dashed #d8d8d8;
+  border-radius: 16px;
+  background: white;
+  text-align: center;
+}
+
+.empty-state h2 {
+  margin-bottom: 8px;
+}
+
+.empty-state p {
+  margin-bottom: 20px;
+  color: #666;
 }
 
 
@@ -289,6 +307,17 @@
     align-items: flex-start;
 
     margin-top: 30px;
+  }
+
+  @media (max-width: 360px) {
+    .listing-container {
+      width: 94%;
+    }
+
+    .listing-card img {
+      height: 185px !important;
+      max-height: 185px;
+    }
   }
 
   .listing-header h1 {

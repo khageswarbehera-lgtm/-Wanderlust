@@ -24,6 +24,29 @@ main {
   min-height: 65vh;
 }
 
+.error-page {
+  width: min(90%, 680px);
+  margin: 56px auto;
+  padding: clamp(24px, 5vw, 42px);
+  border: 1px solid #eee;
+  border-radius: 16px;
+  background: white;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+  overflow-wrap: anywhere;
+}
+
+.error-page h1 {
+  margin-bottom: 12px;
+  color: #a4122d;
+}
+
+.error-page a {
+  display: inline-block;
+  margin-top: 20px;
+  color: #e31c5f;
+  font-weight: 600;
+}
+
 a {
   text-decoration: none;
   color: inherit;
@@ -39,9 +62,29 @@ button {
   cursor: pointer;
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(255, 56, 92, 0.55);
+  outline-offset: 3px;
+}
+
 img {
   max-width: 100%;
   display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 

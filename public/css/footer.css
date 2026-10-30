@@ -111,12 +111,10 @@
   transition: all 0.25s ease;
 }
 
-.social-icon:hover {
-  background: #ff385c;
-
-  color: white;
-
-  transform: translateY(-4px);
+.footer-social-note {
+  margin-top: 12px;
+  color: #aaa;
+  font-size: 13px;
 }
 
 

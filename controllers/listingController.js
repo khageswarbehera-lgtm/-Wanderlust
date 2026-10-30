@@ -1,11 +1,20 @@
 const Listing = require("../models/listing");
+const imageStorage = require("../services/imageStorage");
+
+const removeListingImage = async (image) => {
+  try {
+    await imageStorage.remove(image);
+  } catch (error) {
+    console.error("Could not remove listing image:", error);
+  }
+};
 
 const requiredFields = ["title", "description", "price", "image", "location", "country"];
 const fieldLabels = {
   title: "Title",
   description: "Description",
   price: "Price",
-  image: "Image URL",
+  image: "Listing image",
   location: "Location",
   country: "Country"
 };
@@ -78,7 +87,11 @@ module.exports.index = async (req, res) => {
 
 module.exports.newForm = (req, res) => {
 
-  res.render("listings/new", { listing: {}, errors: {} });
+  res.render("listings/new", {
+    listing: {},
+    errors: {},
+    uploadMessage: "No image selected yet."
+  });
 
 };
 
@@ -89,12 +102,20 @@ module.exports.newForm = (req, res) => {
 
 module.exports.create = async (req, res) => {
   const listing = req.body;
-  const missingFields = findMissingFields(listing);
+  const missingFields = findMissingFields(listing).filter(
+    (field) => field !== "image" || !req.file
+  );
 
-  if (missingFields.length > 0) {
+  if (missingFields.length > 0 || req.uploadError) {
+    const errors = getRequiredFieldErrors(missingFields);
+    if (req.uploadError) errors.image = req.uploadError;
+
     return res.status(400).render("listings/new", {
       listing,
-      errors: getRequiredFieldErrors(missingFields)
+      errors,
+      uploadMessage: req.uploadError || (req.file
+        ? "Image uploaded. Correct the other fields and select it again before resubmitting."
+        : "No image was uploaded.")
     });
   }
 
@@ -102,21 +123,31 @@ module.exports.create = async (req, res) => {
     ...listing,
     owner: req.session.userId
   });
+  let uploadedImage;
 
   try {
+    if (req.file) {
+      uploadedImage = await imageStorage.store(req.file);
+      newListing.image = uploadedImage;
+    }
     await newListing.save();
   } catch (error) {
+    if (uploadedImage) await removeListingImage(uploadedImage);
     if (error.name === "ValidationError") {
       return res.status(400).render("listings/new", {
         listing,
-        errors: getValidationErrors(error)
+        errors: getValidationErrors(error),
+        uploadMessage: req.file
+          ? "Image uploaded. Correct the other fields and select it again before resubmitting."
+          : "No image was uploaded."
       });
     }
 
     throw error;
   }
 
-  res.redirect("/listings");
+  req.session.imageUploadSuccess = true;
+  res.redirect(`/listings/${newListing._id}`);
 
 };
 
@@ -137,9 +168,12 @@ module.exports.show = async (req, res) => {
     throw error;
   }
 
+  const imageUploadSuccess = Boolean(req.session.imageUploadSuccess);
+  delete req.session.imageUploadSuccess;
+
   res.render(
     "listings/show",
-    { listing }
+    { listing, imageUploadSuccess }
   );
 
 };
@@ -171,16 +205,18 @@ module.exports.update = async (req, res) => {
 
   const { id } = req.params;
   const listingData = req.body;
-  const formListing = { ...listingData, _id: id };
-  const missingFields = findMissingFields(listingData);
+  const existingListing = await getOwnedListingOrThrow(id, req.session.userId);
+  if (!listingData.image) listingData.image = existingListing.image;
+  const formListing = { ...listingData, _id: id, image: existingListing.image };
 
-  await getOwnedListingOrThrow(id, req.session.userId);
-
-  if (!listingData.image) {
-    const existingListing = await getOwnedListingOrThrow(id, req.session.userId);
-    listingData.image = existingListing.image;
+  if (req.uploadError) {
+    return res.status(400).render("listings/edit", {
+      listing: formListing,
+      errors: { image: req.uploadError }
+    });
   }
 
+  const missingFields = findMissingFields(listingData);
   if (missingFields.length > 0) {
     return res.status(400).render("listings/edit", {
       listing: formListing,
@@ -188,25 +224,30 @@ module.exports.update = async (req, res) => {
     });
   }
 
+  let uploadedImage;
   let listing;
-
   try {
+    if (req.file) {
+      uploadedImage = await imageStorage.store(req.file);
+      listingData.image = uploadedImage;
+    }
     listing = await Listing.findOneAndUpdate(
       { _id: id, owner: req.session.userId },
       listingData,
       {
-        new: true,
+        returnDocument: "after",
         runValidators: true
       }
     );
   } catch (error) {
+    if (uploadedImage) await removeListingImage(uploadedImage);
     if (error.name === "ValidationError" || error.name === "CastError") {
       const validationErrors = error.name === "CastError"
         ? { price: "Please enter a valid price." }
         : getValidationErrors(error);
 
       return res.status(400).render("listings/edit", {
-        listing: formListing,
+        listing: { ...formListing, ...listingData, image: existingListing.image },
         errors: validationErrors
       });
     }
@@ -215,10 +256,13 @@ module.exports.update = async (req, res) => {
   }
 
   if (!listing) {
+    if (uploadedImage) await removeListingImage(uploadedImage);
     const error = new Error("Listing not found");
     error.status = 404;
     throw error;
   }
+
+  if (uploadedImage) await removeListingImage(existingListing.image);
 
   res.redirect(`/listings/${id}`);
 
@@ -244,6 +288,7 @@ module.exports.destroy = async (req, res) => {
     throw error;
   }
 
+  await removeListingImage(listing.image);
   res.redirect("/listings");
 
 };

@@ -4,7 +4,7 @@ const listingSchema = Joi.object({
   title: Joi.string().trim().required().messages({ "string.empty": "Title is required.", "any.required": "Title is required." }),
   description: Joi.string().trim().required().messages({ "string.empty": "Description is required.", "any.required": "Description is required." }),
   price: Joi.number().min(0).required().messages({ "number.base": "Price must be a number.", "number.min": "Price cannot be negative.", "any.required": "Price is required." }),
-  image: Joi.string().trim().pattern(/^(?:https?:\/\/.+|\/uploads\/.+)/i).optional().messages({ "string.pattern.base": "Image must be an uploaded image." }),
+  image: Joi.string().trim().pattern(/^https?:\/\/.+/i).optional().messages({ "string.pattern.base": "Image must be a valid URL." }),
   location: Joi.string().trim().required().messages({ "string.empty": "Location is required.", "any.required": "Location is required." }),
   country: Joi.string().trim().required().messages({ "string.empty": "Country is required.", "any.required": "Country is required." })
 });

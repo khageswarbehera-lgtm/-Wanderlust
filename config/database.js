@@ -5,7 +5,7 @@ const connectDatabase = async () => {
   mongoose.set("strictQuery", true);
 
   await mongoose.connect(dbUrl, {
-    serverSelectionTimeoutMS: 5000,
+    serverSelectionTimeoutMS: 10000,
     autoIndex: true
   });
 

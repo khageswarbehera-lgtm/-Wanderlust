@@ -202,11 +202,45 @@
 
     justify-content: center;
 
-    gap: 20px;
+    gap: clamp(12px, 4vw, 20px);
+    flex-wrap: wrap;
+  }
+
+  .navbar-right {
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .nav-user {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .nav-create-btn {
+    padding: 8px 13px;
   }
 
   .logo-text {
     font-size: 20px;
+  }
+
+  @media (max-width: 420px) {
+    .navbar {
+      padding-inline: 4%;
+    }
+
+    .navbar-logo {
+      gap: 7px;
+    }
+
+    .logo-text {
+      font-size: 17px;
+    }
+
+    .navbar-right {
+      gap: 8px;
+    }
   }
 
   .navbar-logo {

@@ -1,0 +1,23 @@
+<% layout("layouts/boilerplate") %>
+
+<div class="form-container auth-container">
+  <h1>Verify your email</h1>
+  <p>Enter the six-digit code sent to <strong><%= email %></strong>.</p>
+
+  <% if (error) { %>
+    <p class="form-error" role="alert"><%= error %></p>
+  <% } %>
+  <% if (message) { %>
+    <p class="auth-switch" role="status"><%= message %></p>
+  <% } %>
+
+  <form action="/verify-email" method="POST">
+    <label for="code">Verification code</label>
+    <input id="code" type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code" required autofocus>
+    <button type="submit">Verify email</button>
+  </form>
+
+  <form action="/verify-email/resend" method="POST">
+    <button type="submit">Send a new code</button>
+  </form>
+</div>

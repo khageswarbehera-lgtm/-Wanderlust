@@ -1,6 +1,14 @@
 module.exports = (err, req, res, next) => {
+  if (res.headersSent) {
+    return next(err);
+  }
 
-  let { status = 500, message = "Something went wrong!" } = err;
+  let status = Number.isInteger(err.status) && err.status >= 400 && err.status < 600
+    ? err.status
+    : 500;
+  let message = status < 500 && err.message
+    ? err.message
+    : "Something went wrong!";
 
   if (err.name === "ValidationError") {
     status = 400;
@@ -14,7 +22,7 @@ module.exports = (err, req, res, next) => {
     message = "Invalid listing ID";
   }
 
-  console.error(err);
+  console.error("Request failed", { status });
 
   res.status(status).render("error", { status, message });
 

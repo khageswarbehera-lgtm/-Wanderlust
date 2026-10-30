@@ -2,6 +2,12 @@
 
 <div class="show-container">
 
+  <a href="/listings" class="back-btn">← All listings</a>
+
+  <% if (imageUploadSuccess) { %>
+    <p class="upload-status upload-status-success" role="status" aria-live="polite">Listing created and image uploaded successfully.</p>
+  <% } %>
+
   <h1>
     <%= listing.title %>
   </h1>
@@ -30,7 +36,7 @@
     <div class="actions">
       <a href="/listings/<%= listing._id %>/edit" class="edit-btn">Edit</a>
 
-      <form action="/listings/<%= listing._id %>?_method=DELETE" method="POST">
+      <form action="/listings/<%= listing._id %>?_method=DELETE" method="POST" data-confirm="Delete this listing? This cannot be undone.">
         <button type="submit" class="delete-btn">Delete</button>
       </form>
     </div>
@@ -46,11 +52,11 @@
         <input type="range" name="review[rating]" id="rating" min="1" max="5" step="1" value="3" required data-rating-input>
         <output for="rating" data-rating-output>3</output><span> / 5</span>
       </div>
-      <p class="field-error" data-field="rating" hidden></p>
+      <p class="field-error" id="review-rating-error" data-field="rating" hidden></p>
 
       <label for="comment">Your review</label>
       <textarea name="review[comment]" id="comment" maxlength="1000" required></textarea>
-      <p class="field-error" data-field="comment" hidden></p>
+      <p class="field-error" id="review-comment-error" data-field="comment" hidden></p>
 
       <button type="submit" class="review-btn">Submit review</button>
       </form>
@@ -70,7 +76,7 @@
             <% if (currentUser && review.owner && review.owner.toString() === currentUser.id) { %>
               <div class="review-actions">
                 <button type="button" class="edit-btn" data-review-edit="review-edit-<%= review._id %>" aria-expanded="false">Edit</button>
-                <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST">
+                <form action="/listings/<%= listing._id %>/reviews/<%= review._id %>?_method=DELETE" method="POST" data-confirm="Delete this review? This cannot be undone.">
                   <button type="submit" class="delete-btn">Delete</button>
                 </form>
               </div>
@@ -89,11 +95,11 @@
                 <input type="range" name="review[rating]" id="rating-<%= review._id %>" min="1" max="5" step="1" value="<%= review.rating %>" required data-rating-input>
                 <output for="rating-<%= review._id %>" data-rating-output><%= review.rating %></output><span> / 5</span>
               </div>
-              <p class="field-error" data-field="rating" hidden></p>
+              <p class="field-error" id="review-rating-error-<%= review._id %>" data-field="rating" hidden></p>
 
               <label for="comment-<%= review._id %>">Your review</label>
               <textarea name="review[comment]" id="comment-<%= review._id %>" maxlength="1000" required><%= review.comment %></textarea>
-              <p class="field-error" data-field="comment" hidden></p>
+              <p class="field-error" id="review-comment-error-<%= review._id %>" data-field="comment" hidden></p>
               <button type="submit" class="review-btn">Save changes</button>
               </form>
             <% } %>

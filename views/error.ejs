@@ -1,7 +1,7 @@
 <% layout("layouts/boilerplate") %>
 
-<section class="error-page">
-  <h1>Error <%= status %></h1>
+<section class="error-page" role="alert" aria-labelledby="error-title">
+  <h1 id="error-title">Error <%= status %></h1>
   <p><%= message %></p>
   <a href="/listings">Return to listings</a>
 </section>

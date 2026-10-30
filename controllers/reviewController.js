@@ -60,7 +60,7 @@ module.exports.update = async (req, res) => {
   const review = await Review.findOneAndUpdate(
     { _id: req.params.reviewId, owner: req.session.userId },
     req.body.review,
-    { new: true, runValidators: true }
+    { returnDocument: "after", runValidators: true }
   );
 
   if (!review) {

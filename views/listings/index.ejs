@@ -11,11 +11,12 @@
 
 <div class="listing-container">
 
-  <% listings.forEach(listing => { %>
+  <% if (listings.length) { %>
+    <% listings.forEach(listing => { %>
 
     <div class="listing-card">
 
-        <a href="/listings/<%= listing._id %>">
+        <a href="/listings/<%= listing._id %>" class="listing-image-link">
 
 
       <img
@@ -27,32 +28,39 @@
 
       <div class="listing-content">
 
-        <a href="/listings/<%= listing._id %>">
+        <a href="/listings/<%= listing._id %>" class="title-link">
 
-          <h2>
+          <h2 class="listing-title">
             <%= listing.title %>
           </h2>
 
         </a>
 
-        <p>
+        <p class="location">
           📍 <%= listing.location %>,
           <%= listing.country %>
         </p>
 
-        <p>
+        <p class="description">
           <%= listing.description %>
         </p>
 
-        <p>
-         <b>₹<%= listing.price.toLocaleString("en-IN") %></b>
-          / night
+        <p class="price">
+         ₹<%= listing.price.toLocaleString("en-IN") %>
+          <span>/ night</span>
         </p>
 
       </div>
 
     </div>
 
-  <% }) %>
+    <% }) %>
+  <% } else { %>
+    <section class="empty-state" aria-labelledby="empty-listings-title">
+      <h2 id="empty-listings-title">No listings yet</h2>
+      <p>Be the first to share a place worth discovering.</p>
+      <a href="/listings/new" class="create-btn">Create a listing</a>
+    </section>
+  <% } %>
 
 </div>

@@ -278,3 +278,40 @@
   font-size: 14px;
   font-weight: 600;
 }
+
+.reviews-section,
+.review-card,
+.review-edit-form {
+  min-width: 0;
+}
+
+.review-card p {
+  overflow-wrap: anywhere;
+}
+
+.review-actions {
+  flex-wrap: wrap;
+}
+
+.review-edit-form[hidden] {
+  display: none;
+}
+
+@media (max-width: 420px) {
+  .show-container {
+    width: 92%;
+    margin-block: 28px;
+  }
+
+  .listing-image {
+    height: 240px;
+  }
+
+  .review-list {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .review-btn {
+    max-width: 100%;
+  }
+}

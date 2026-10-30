@@ -12,34 +12,36 @@
     novalidate
   >
 
-    <label>Title</label>
+    <label for="title">Title</label>
 
     <input
       type="text"
       name="title"
+      id="title"
       value="<%= listing.title %>"
       required
     >
-    <p class="field-error" data-field="title" <%= errors.title ? "" : "hidden" %>><%= errors.title || "" %></p>
+    <p class="field-error" id="title-error" data-field="title" <%= errors.title ? "" : "hidden" %> role="alert"><%= errors.title || "" %></p>
 
 
-    <label>Description</label>
+    <label for="description">Description</label>
 
-    <textarea name="description" required><%= listing.description %></textarea>
-    <p class="field-error" data-field="description" <%= errors.description ? "" : "hidden" %>><%= errors.description || "" %></p>
+    <textarea name="description" id="description" required><%= listing.description %></textarea>
+    <p class="field-error" id="description-error" data-field="description" <%= errors.description ? "" : "hidden" %> role="alert"><%= errors.description || "" %></p>
 
 
-    <label>Price</label>
+    <label for="price">Price</label>
 
     <input
       type="number"
       name="price"
+      id="price"
       value="<%= listing.price %>"
       min="0"
       step="any"
       required
     >
-    <p class="field-error" data-field="price" <%= errors.price ? "" : "hidden" %>><%= errors.price || "" %></p>
+    <p class="field-error" id="price-error" data-field="price" <%= errors.price ? "" : "hidden" %> role="alert"><%= errors.price || "" %></p>
 
 
     <label for="image">Replace image (optional)</label>
@@ -48,32 +50,35 @@
       type="file"
       name="image"
       id="image"
-      accept="image/*"
+      accept="image/jpeg,image/png,image/gif,image/webp"
     >
     <img src="<%= listing.image %>" alt="Current listing image" class="current-image-preview">
-    <p class="field-error" data-field="image" <%= errors.image ? "" : "hidden" %>><%= errors.image || "" %></p>
+    <p class="upload-status" id="image-upload-status" data-upload-status role="status" aria-live="polite">No replacement selected.</p>
+    <p class="field-error" id="image-error" data-field="image" <%= errors.image ? "" : "hidden" %> role="alert"><%= errors.image || "" %></p>
 
 
-    <label>Location</label>
+    <label for="location">Location</label>
 
     <input
       type="text"
       name="location"
+      id="location"
       value="<%= listing.location %>"
       required
     >
-    <p class="field-error" data-field="location" <%= errors.location ? "" : "hidden" %>><%= errors.location || "" %></p>
+    <p class="field-error" id="location-error" data-field="location" <%= errors.location ? "" : "hidden" %> role="alert"><%= errors.location || "" %></p>
 
 
-    <label>Country</label>
+    <label for="country">Country</label>
 
     <input
       type="text"
       name="country"
+      id="country"
       value="<%= listing.country %>"
       required
     >
-    <p class="field-error" data-field="country" <%= errors.country ? "" : "hidden" %>><%= errors.country || "" %></p>
+    <p class="field-error" id="country-error" data-field="country" <%= errors.country ? "" : "hidden" %> role="alert"><%= errors.country || "" %></p>
 
 
     <button type="submit">
