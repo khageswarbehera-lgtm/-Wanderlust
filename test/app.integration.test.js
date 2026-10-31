@@ -196,34 +196,26 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
   });
   assertStatus(deceptiveOrigin, 403);
 
-  const signupAndVerify = async (client, username, email) => {
+  const signupAndSignIn = async (client, username, email) => {
+    const sentCodeCount = sentCodes.length;
     const signup = await client.postForm("/signup", {
       username,
       email,
       password: "test-password-123"
     });
-    assertStatus(signup, 200);
+    assertStatus(signup, 302);
+    assert.equal(signup.headers.get("location"), "/listings");
     assert.match(signup.headers.get("set-cookie"), /SameSite=Lax/i);
-    const signupHtml = await signup.text();
-    assert.match(signupHtml, /Verify your email/);
-    assert.match(signupHtml, /Log in/);
-    const code = sentCodes.at(-1);
-    assert.equal(code.email, email);
-    assert.equal(code.purpose, "verification");
-
-    const verificationPage = await client.request("/verify-email");
-    assertStatus(verificationPage, 200);
-    assert.match(await verificationPage.text(), /Log in/);
-
-    const verify = await client.postForm("/verify-email", { code: code.code });
-    assertStatus(verify, 302);
-    assert.equal(verify.headers.get("location"), "/listings");
+    assert.equal(sentCodes.length, sentCodeCount);
+    const authenticatedPage = await client.request("/listings");
+    assertStatus(authenticatedPage, 200);
+    assert.match(await authenticatedPage.text(), new RegExp(`Hi, ${username}`));
   };
 
-  await signupAndVerify(owner, "listing-owner", "owner@example.test");
+  await signupAndSignIn(owner, "listing-owner", "owner@example.test");
   assert.ok(await mongoose.connection.collection("sessions").countDocuments() > 0);
-  await signupAndVerify(reviewer, "listing-reviewer", "reviewer@example.test");
-  await signupAndVerify(outsider, "listing-outsider", "outsider@example.test");
+  await signupAndSignIn(reviewer, "listing-reviewer", "reviewer@example.test");
+  await signupAndSignIn(outsider, "listing-outsider", "outsider@example.test");
 
   const User = require("../models/user");
   const Listing = require("../models/listing");
@@ -236,6 +228,7 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
     assertStatus(authPage, 200);
     assert.match(await authPage.text(), /Log in|Sign up/);
   }
+  assertStatus(await unauthenticated.request("/verify-email"), 404);
   const missingPage = await unauthenticated.request("/missing-page");
   assertStatus(missingPage, 404);
   assert.match(await missingPage.text(), /Page not found/);
@@ -338,37 +331,15 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
   }
   owner = passwordLoginClient;
 
-  const pendingClient = new TestClient(owner.baseUrl);
-  const pendingSignup = await pendingClient.postForm("/signup", {
-    username: "pending-verification",
-    email: "pending@example.test",
-    password: "pending-test-password"
+  const sentCodeCount = sentCodes.length;
+  const duplicateSignup = await unauthenticated.postForm("/signup", {
+    username: "different-owner",
+    email: "owner@example.test",
+    password: "different-password-123"
   });
-  assertStatus(pendingSignup, 200);
-  const pendingCode = sentCodes.at(-1).code;
-  const pendingUser = await User.findOne({ email: "pending@example.test" });
-  pendingUser.emailVerificationExpires = new Date(Date.now() - 1);
-  await pendingUser.save();
-  const expiredVerification = await pendingClient.postForm("/verify-email", { code: pendingCode });
-  assertStatus(expiredVerification, 400);
-  assert.equal((await User.findById(pendingUser._id)).emailVerified, false);
-  const restartedSignup = await pendingClient.postForm("/signup", {
-    username: "pending-verification",
-    email: "pending@example.test",
-    password: "replacement-pending-password"
-  });
-  assertStatus(restartedSignup, 200);
-  assert.match(await restartedSignup.text(), /A new verification code was sent/);
-  const restartedCode = sentCodes.at(-1).code;
-  assert.notEqual(restartedCode, pendingCode);
-  const updatedPendingUser = await User.findById(pendingUser._id);
-  assert.ok(await bcrypt.compare("replacement-pending-password", updatedPendingUser.password));
-
-  const oldPendingCode = await pendingClient.postForm("/verify-email", { code: pendingCode });
-  assertStatus(oldPendingCode, 400);
-  const completedRestart = await pendingClient.postForm("/verify-email", { code: restartedCode });
-  assertStatus(completedRestart, 302);
-  assert.equal((await User.findById(pendingUser._id)).emailVerified, true);
+  assertStatus(duplicateSignup, 400);
+  assert.match(await duplicateSignup.text(), /That email is already in use/);
+  assert.equal(sentCodes.length, sentCodeCount);
 
   const anonymousCreate = await unauthenticated.request("/listings", {
     method: "POST",

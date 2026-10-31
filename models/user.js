@@ -25,16 +25,6 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0
     },
-    emailVerified: {
-      type: Boolean,
-      default: false
-    },
-    emailVerificationCodeHash: String,
-    emailVerificationExpires: Date,
-    emailVerificationAttempts: {
-      type: Number,
-      default: 0
-    },
     passwordResetCodeHash: String,
     passwordResetExpires: Date,
     passwordResetAttempts: {

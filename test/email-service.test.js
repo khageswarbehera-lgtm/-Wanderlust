@@ -64,7 +64,7 @@ test("SMTP delivery requires TLS and rejects messages not accepted by the provid
   assert.equal(transportOptions.requireTLS, true);
   assert.equal(transportOptions.tls.minVersion, "TLSv1.2");
 
-  await emailService.sendCodeEmail("user@example.test", "123456", "verification");
+  await emailService.sendCodeEmail("user@example.test", "123456", "password-reset");
   assert.equal(sentMessage.to, "user@example.test");
   assert.match(sentMessage.text, /123456/);
 

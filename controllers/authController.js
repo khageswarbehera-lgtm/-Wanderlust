@@ -10,6 +10,17 @@ const renderSignup = (res, values = {}, error = "") =>
 const renderLogin = (res, values = {}, error = "", message = "") =>
   res.status(error ? 400 : 200).render("auth/login", { values, error, message });
 
+const startAuthenticatedSession = (req, user, res, next, redirectTo) => {
+  req.session.regenerate((error) => {
+    if (error) return next(error);
+
+    req.session.userId = user._id.toString();
+    req.session.username = user.username;
+    req.session.authVersion = user.authVersion || 0;
+    res.redirect(redirectTo);
+  });
+};
+
 const normalizeEmail = (email) => typeof email === "string" ? email.trim().toLowerCase() : "";
 const isValidEmail = (email) => !Joi.string().email({ tlds: { allow: false } }).validate(email).error;
 const createCode = () => crypto.randomInt(100000, 1000000).toString();
@@ -32,60 +43,17 @@ class EmailDeliveryError extends Error {
 const logEmailDeliveryFailure = (purpose) =>
   console.error(`Email delivery failed for ${purpose}.`);
 
-const renderVerification = (res, email, error = "", message = "") =>
-  res.status(error ? 400 : 200).render("auth/verify-email", { email, error, message });
-
 const renderForgotPassword = (res, values = {}, error = "") =>
   res.status(error ? 400 : 200).render("auth/forgot-password", { values, error });
 
 const renderResetPassword = (res, values = {}, error = "", message = "") =>
   res.status(error ? 400 : 200).render("auth/reset-password", { values, error, message });
 
-const startVerificationSession = (req, user, res, next, message) => {
-  req.session.regenerate((error) => {
-    if (error) return next(error);
-    req.session.pendingVerificationUserId = user._id.toString();
-    return renderVerification(res, user.email, "", message);
-  });
-};
-
-const sendVerificationCode = async (user) => {
-  const code = createCode();
-  const codeHash = hashCode(code);
-  const update = await User.updateOne(
-    { _id: user._id, emailVerified: { $ne: true } },
-    {
-      $set: {
-        emailVerificationCodeHash: codeHash,
-        emailVerificationExpires: codeExpiresAt(),
-        emailVerificationAttempts: 0
-      }
-    }
-  );
-  if (!update.matchedCount) throw new Error("Email verification is no longer available.");
-
-  try {
-    await sendCodeEmail(user.email, code, "verification");
-  } catch (error) {
-    await User.updateOne(
-      { _id: user._id, emailVerificationCodeHash: codeHash },
-      {
-        $unset: {
-          emailVerificationCodeHash: 1,
-          emailVerificationExpires: 1
-        },
-        $set: { emailVerificationAttempts: 0 }
-      }
-    );
-    throw new EmailDeliveryError();
-  }
-};
-
 const sendPasswordResetCode = async (user) => {
   const code = createCode();
   const codeHash = hashCode(code);
   const update = await User.updateOne(
-    { _id: user._id, emailVerified: true },
+    { _id: user._id },
     {
       $set: {
         passwordResetCodeHash: codeHash,
@@ -135,97 +103,9 @@ module.exports.signup = async (req, res, next) => {
     return renderSignup(res, values, "Password must be at least 8 characters.");
   }
 
-  if (!isMailConfigured) {
-    return renderSignup(res, values, "Email verification is temporarily unavailable. Please try again later.");
-  }
-
   const existingEmailUser = await User.findOne({ email });
-
   if (existingEmailUser) {
-    if (existingEmailUser.emailVerified) {
-      return renderSignup(res, values, "That email is already in use.");
-    }
-
-    const now = new Date();
-    const hasActiveCode = existingEmailUser.emailVerificationCodeHash &&
-      existingEmailUser.emailVerificationExpires > now &&
-      existingEmailUser.emailVerificationAttempts < 5;
-
-    if (hasActiveCode) {
-      if (!await bcrypt.compare(password, existingEmailUser.password)) {
-        return renderSignup(res, values, "That email is already in use.");
-      }
-
-      try {
-        await sendVerificationCode(existingEmailUser);
-      } catch (error) {
-        if (!(error instanceof EmailDeliveryError)) throw error;
-        logEmailDeliveryFailure("verification", error);
-        return renderSignup(res, values, "Could not send a verification code. Please try again.");
-      }
-      return startVerificationSession(
-        req, existingEmailUser, res, next, "A new verification code was sent to your email."
-      );
-    }
-
-    const usernameOwner = await User.findOne({
-      username,
-      _id: { $ne: existingEmailUser._id }
-    });
-    if (usernameOwner) {
-      return renderSignup(res, values, "That username is already in use.");
-    }
-
-    const passwordHash = await bcrypt.hash(password, 12);
-    let restartedUser;
-    try {
-      restartedUser = await User.findOneAndUpdate(
-        {
-          _id: existingEmailUser._id,
-          emailVerified: { $ne: true },
-          $or: [
-            { emailVerificationCodeHash: { $exists: false } },
-            { emailVerificationExpires: { $exists: false } },
-            { emailVerificationExpires: { $lte: now } },
-            { emailVerificationAttempts: { $gte: 5 } }
-          ]
-        },
-        {
-          $set: {
-            username,
-            password: passwordHash,
-            emailVerificationAttempts: 0
-          },
-          $unset: {
-            emailVerificationCodeHash: 1,
-            emailVerificationExpires: 1,
-            passwordResetCodeHash: 1,
-            passwordResetExpires: 1
-          }
-        },
-        { returnDocument: "after", runValidators: true }
-      );
-    } catch (error) {
-      if (error.code === 11000) {
-        return renderSignup(res, values, "That username is already in use.");
-      }
-      throw error;
-    }
-
-    if (!restartedUser) {
-      return renderSignup(res, values, "A verification request is already in progress. Please try again.");
-    }
-
-    try {
-      await sendVerificationCode(restartedUser);
-    } catch (error) {
-      if (!(error instanceof EmailDeliveryError)) throw error;
-      logEmailDeliveryFailure("verification", error);
-      return renderSignup(res, values, "Could not send a verification code. Please try again.");
-    }
-    return startVerificationSession(
-      req, restartedUser, res, next, "A new verification code was sent to your email."
-    );
+    return renderSignup(res, values, "That email is already in use.");
   }
 
   const existingUsername = await User.findOne({ username });
@@ -239,8 +119,7 @@ module.exports.signup = async (req, res, next) => {
     user = await User.create({
       username,
       email,
-      password: passwordHash,
-      emailVerified: false
+      password: passwordHash
     });
   } catch (error) {
     if (error.code === 11000) {
@@ -252,15 +131,7 @@ module.exports.signup = async (req, res, next) => {
     throw error;
   }
 
-  try {
-    await sendVerificationCode(user);
-  } catch (error) {
-    if (!(error instanceof EmailDeliveryError)) throw error;
-    logEmailDeliveryFailure("verification", error);
-    return renderSignup(res, values, "Could not send a verification code. Please try again.");
-  }
-
-  return startVerificationSession(req, user, res, next, "A verification code was sent to your email.");
+  return startAuthenticatedSession(req, user, res, next, "/listings");
 };
 
 module.exports.loginForm = (req, res) => {
@@ -279,103 +150,10 @@ module.exports.login = async (req, res, next) => {
     return renderLogin(res, { email, returnTo }, "Invalid credentials.");
   }
 
-  if (!user.emailVerified) {
-    return startVerificationSession(
-      req, user, res, next, "Verify your email before logging in."
-    );
-  }
-
-  req.session.regenerate((error) => {
-    if (error) return next(error);
-
-    req.session.userId = user._id.toString();
-    req.session.username = user.username;
-    req.session.authVersion = user.authVersion || 0;
-    const safeReturnTo = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
-      ? returnTo
-      : "/listings";
-    res.redirect(safeReturnTo);
-  });
-};
-
-module.exports.verifyEmailForm = async (req, res) => {
-  if (!req.session.pendingVerificationUserId) return res.redirect("/signup");
-  const user = await User.findById(req.session.pendingVerificationUserId);
-  if (!user) return res.redirect("/signup");
-  return renderVerification(res, user.email);
-};
-
-module.exports.verifyEmail = async (req, res, next) => {
-  const user = req.session.pendingVerificationUserId
-    ? await User.findById(req.session.pendingVerificationUserId)
-    : null;
-  const code = typeof req.body.code === "string" ? req.body.code.trim() : "";
-
-  if (!user || user.emailVerified || !/^\d{6}$/.test(code) ||
-      !user.emailVerificationCodeHash || !user.emailVerificationExpires ||
-      user.emailVerificationExpires <= new Date() || user.emailVerificationAttempts >= 5) {
-    return renderVerification(res, user?.email || "", "Invalid credentials or expired verification code.");
-  }
-
-  const now = new Date();
-  const codeHash = hashCode(code);
-  if (!matchesCodeHash(user.emailVerificationCodeHash, code)) {
-    await User.updateOne(
-      {
-        _id: user._id,
-        emailVerificationCodeHash: user.emailVerificationCodeHash,
-        emailVerificationExpires: { $gt: now },
-        emailVerificationAttempts: { $lt: 5 }
-      },
-      { $inc: { emailVerificationAttempts: 1 } }
-    );
-    return renderVerification(res, user.email, "Invalid credentials or expired verification code.");
-  }
-
-  const verifiedUser = await User.findOneAndUpdate(
-    {
-      _id: user._id,
-      emailVerified: { $ne: true },
-      emailVerificationCodeHash: codeHash,
-      emailVerificationExpires: { $gt: now },
-      emailVerificationAttempts: { $lt: 5 }
-    },
-    {
-      $set: { emailVerified: true, emailVerificationAttempts: 0 },
-      $unset: { emailVerificationCodeHash: 1, emailVerificationExpires: 1 }
-    },
-    { returnDocument: "after" }
-  );
-  if (!verifiedUser) {
-    return renderVerification(res, user.email, "Invalid credentials or expired verification code.");
-  }
-
-  req.session.regenerate((error) => {
-    if (error) return next(error);
-    req.session.userId = verifiedUser._id.toString();
-    req.session.username = verifiedUser.username;
-    req.session.authVersion = verifiedUser.authVersion || 0;
-    res.redirect("/listings");
-  });
-};
-
-module.exports.resendVerificationCode = async (req, res) => {
-  const user = req.session.pendingVerificationUserId
-    ? await User.findById(req.session.pendingVerificationUserId)
-    : null;
-  if (!user || user.emailVerified) return res.redirect("/signup");
-  if (!isMailConfigured) {
-    return renderVerification(res, user.email, "Email verification is temporarily unavailable. Please try again later.");
-  }
-
-  try {
-    await sendVerificationCode(user);
-  } catch (error) {
-    if (!(error instanceof EmailDeliveryError)) throw error;
-    logEmailDeliveryFailure("verification", error);
-    return renderVerification(res, user.email, "Could not send a verification code. Please try again.");
-  }
-  return renderVerification(res, user.email, "", "A new verification code was sent to your email.");
+  const safeReturnTo = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")
+    ? returnTo
+    : "/listings";
+  return startAuthenticatedSession(req, user, res, next, safeReturnTo);
 };
 
 module.exports.forgotPasswordForm = (req, res) => renderForgotPassword(res);
@@ -389,7 +167,7 @@ module.exports.forgotPassword = async (req, res) => {
     return renderForgotPassword(res, { email }, "Password recovery is temporarily unavailable. Please try again later.");
   }
 
-  const user = await User.findOne({ email, emailVerified: true });
+  const user = await User.findOne({ email });
   if (user) {
     try {
       await sendPasswordResetCode(user);
@@ -417,7 +195,7 @@ module.exports.resetPassword = async (req, res) => {
     return renderResetPassword(res, values, "Invalid credentials or expired recovery code.");
   }
 
-  const user = await User.findOne({ email, emailVerified: true });
+  const user = await User.findOne({ email });
   if (!user || !user.passwordResetCodeHash || !user.passwordResetExpires ||
       user.passwordResetExpires <= new Date() || user.passwordResetAttempts >= 5) {
     return renderResetPassword(res, values, "Invalid credentials or expired recovery code.");
@@ -442,7 +220,6 @@ module.exports.resetPassword = async (req, res) => {
   const resetUser = await User.findOneAndUpdate(
     {
       _id: user._id,
-      emailVerified: true,
       passwordResetCodeHash: codeHash,
       passwordResetExpires: { $gt: new Date() },
       passwordResetAttempts: { $lt: 5 }

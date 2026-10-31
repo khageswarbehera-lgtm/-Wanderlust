@@ -1,11 +1,11 @@
 # Wanderlust
 
-Wanderlust is a server-rendered travel-listing application built with Express, EJS, and MongoDB/Mongoose. It supports account registration and email verification, login/logout, password recovery, listing and review management, and listing image uploads.
+Wanderlust is a server-rendered travel-listing application built with Express, EJS, and MongoDB/Mongoose. It supports account registration, login/logout, password recovery, listing and review management, and listing image uploads.
 
 ## Features
 
 - Browse listings and view individual listing details.
-- Register with an email address, verify the address using a time-limited code, log in, and log out.
+- Register with an email address and password, then log in automatically.
 - Request a password-reset code and update a password using that code.
 - Create, edit, and delete listings. Listing changes require authentication and are checked against listing ownership.
 - Add, edit, and delete reviews. Review changes require authentication and are checked against review ownership.
@@ -18,7 +18,7 @@ Wanderlust is a server-rendered travel-listing application built with Express, E
 - Node.js 20.19 or newer.
 - npm.
 - MongoDB, either a local server for development or a reachable deployment for production.
-- SMTP credentials to use signup email verification and password recovery.
+- SMTP credentials to use password recovery.
 - An S3-compatible bucket and its configuration for the default production image-storage mode.
 
 ## Installation
@@ -64,13 +64,13 @@ Values in `.env.example` are examples, not production credentials. Keep `.env` o
 | `MAIL_FROM` | `SMTP_USER` | Sender address accepted by the SMTP provider. |
 | `SEED_PASSWORD` | Unsafe built-in seed-only fallback | Password assigned by `npm run seed` to the seed account. Set an appropriate value before running the seed command, and never use this command against production data. |
 
-SMTP settings are optional at server startup, but if any SMTP setting is provided, `SMTP_HOST`, `SMTP_USER`, and `SMTP_PASS` must all be supplied. Without configured SMTP, signup verification and password recovery are unavailable.
+SMTP settings are optional at server startup, but if any SMTP setting is provided, `SMTP_HOST`, `SMTP_USER`, and `SMTP_PASS` must all be supplied. Without configured SMTP, password recovery is unavailable; account registration and login remain available.
 
 ## MongoDB and seed data
 
 For local development, start a local MongoDB server and use the default URI, or set `MONGODB_URI` to another development database. Production requires a remote MongoDB connection URI with a database name. Use a dedicated database for each environment and keep connection credentials private.
 
-`npm run seed` is **destructive to the database named by `MONGODB_URI`**: it deletes every document in that database's `listings` collection and inserts the sample listings. It also upserts the `seed@wanderlust.local` user and assigns a password hash from `SEED_PASSWORD` (or the insecure built-in fallback if it is unset). On a newly created user, email verification remains false, so the seed account is not immediately usable for login. The script is for disposable development databases only. Check the resolved URI and set `SEED_PASSWORD` before running it; never run it against production or any database containing listings you need to keep. This script does not reset other collections, including reviews.
+`npm run seed` is **destructive to the database named by `MONGODB_URI`**: it deletes every document in that database's `listings` collection and inserts the sample listings. It also upserts the `seed@wanderlust.local` user and assigns a password hash from `SEED_PASSWORD` (or the insecure built-in fallback if it is unset). The seed account can log in with that password. The script is for disposable development databases only. Check the resolved URI and set `SEED_PASSWORD` before running it; never run it against production or any database containing listings you need to keep. This script does not reset other collections, including reviews.
 
 ## Development commands
 
@@ -93,7 +93,7 @@ GitHub Actions runs on pushes and pull requests. It installs dependencies with `
 
 1. Use Node.js 20.19 or newer and install with `npm ci`.
 2. Set `NODE_ENV=production`, `APP_ORIGIN`, `MONGODB_URI`, and a strong `SESSION_SECRET` through the platform's environment/secret settings. For this Render service, set `APP_ORIGIN=https://wonderlust-oijv.onrender.com`.
-3. Configure SMTP if users need signup verification or password recovery.
+3. Configure SMTP if users need password recovery.
 4. Configure S3-compatible storage (`S3_BUCKET`, `S3_REGION`, and `S3_PUBLIC_URL`) or explicitly select local storage on a persistent mounted volume. The production default is S3.
 5. On Render, set the service type to **Web Service**, the build command to `npm ci`, and the start command to `npm start`. Do not use `npm run dev`; it starts nodemon and is intended only for local development. The server binds to `0.0.0.0` and uses Render's injected `PORT` (falling back to `3000` locally).
 6. Route HTTPS traffic through a trusted reverse proxy.
@@ -102,8 +102,7 @@ Production sessions are stored in the same MongoDB database for seven days; Mong
 
 ## Known limitations
 
-- Authentication mutation endpoints have MongoDB-backed per-IP rate limits: signup (5/hour), login (10/15 minutes), email verification and reset (10/15 minutes each), verification resend (3/hour), password recovery request (5/hour), and logout (10/15 minutes). A `429` response includes `Retry-After`. Verification and password-reset codes also expire after 10 minutes and allow up to five failed code attempts. Limits are fixed in code, not configurable through environment variables; production deployments must use the configured trusted proxy so client IPs are identified correctly.
-- An unverified signup can be restarted after its verification code expires or is exhausted, using a new password and username. A fresh code is sent to the email address, and verification remains required before login.
+- Authentication mutation endpoints have MongoDB-backed per-IP rate limits: signup (5/hour), login (10/15 minutes), password reset (10/15 minutes), password recovery request (5/hour), and logout (10/15 minutes). A `429` response includes `Retry-After`. Password-reset codes expire after 10 minutes and allow up to five failed code attempts. Limits are fixed in code, not configurable through environment variables; production deployments must use the configured trusted proxy so client IPs are identified correctly.
 - Origin checks apply only when a mutating request includes an `Origin` header. The app does not configure CORS or provide a separate CSRF-token middleware.
 - The app uses Express's in-memory session store in development unless configured otherwise; those sessions are not durable across restarts and should not be used for a multi-instance deployment. The integration suite explicitly configures a MongoDB session store against its temporary test database.
 - The test suite uses a temporary MongoDB instance and stubs email. It does not validate connectivity to a production MongoDB cluster, live SMTP delivery, S3 permissions, a deployment proxy, or a full production browser workflow.

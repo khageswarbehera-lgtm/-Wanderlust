@@ -7,8 +7,6 @@ const router = express.Router();
 
 const rateLimits = {
   signup: createAuthRateLimit("signup", 5, 60 * 60 * 1000),
-  verifyEmail: createAuthRateLimit("verify-email", 10, 15 * 60 * 1000),
-  resendVerification: createAuthRateLimit("resend-verification", 3, 60 * 60 * 1000),
   login: createAuthRateLimit("login", 10, 15 * 60 * 1000),
   forgotPassword: createAuthRateLimit("forgot-password", 5, 60 * 60 * 1000),
   resetPassword: createAuthRateLimit("reset-password", 10, 15 * 60 * 1000),
@@ -17,9 +15,6 @@ const rateLimits = {
 
 router.get("/signup", authController.signupForm);
 router.post("/signup", asyncWrap(rateLimits.signup), asyncWrap(authController.signup));
-router.get("/verify-email", asyncWrap(authController.verifyEmailForm));
-router.post("/verify-email", asyncWrap(rateLimits.verifyEmail), asyncWrap(authController.verifyEmail));
-router.post("/verify-email/resend", asyncWrap(rateLimits.resendVerification), asyncWrap(authController.resendVerificationCode));
 router.get("/login", authController.loginForm);
 router.post("/login", asyncWrap(rateLimits.login), asyncWrap(authController.login));
 router.get("/forgot-password", authController.forgotPasswordForm);

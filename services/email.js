@@ -27,10 +27,12 @@ async function sendCodeEmail(to, code, purpose) {
   if (!transporter) {
     throw new Error("SMTP email settings are missing.");
   }
+  if (purpose !== "password-reset") {
+    throw new Error("Unsupported email code purpose.");
+  }
 
-  const isVerification = purpose === "verification";
-  const subject = isVerification ? "Verify your Wanderlust account" : "Reset your Wanderlust password";
-  const action = isVerification ? "verify your email address" : "reset your password";
+  const subject = "Reset your Wanderlust password";
+  const action = "reset your password";
   const text = `Use this code to ${action}: ${code}. It expires in 10 minutes.`;
 
   const result = await transporter.sendMail({
