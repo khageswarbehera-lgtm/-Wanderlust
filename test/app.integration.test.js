@@ -23,6 +23,9 @@ class TestClient {
       body,
       redirect,
       headers: {
+        ...(["POST", "PUT", "PATCH", "DELETE"].includes(method)
+          ? { origin: new URL(this.baseUrl).origin }
+          : {}),
         ...(this.cookie ? { cookie: this.cookie } : {}),
         ...headers
       }
@@ -166,6 +169,32 @@ test("HTTP integration: authentication, listing CRUD, reviews, authorization, va
   assert.match(blockedSignupHtml, /Cross-origin request rejected/);
   assert.doesNotMatch(blockedSignupHtml, /currentUser is not defined/);
   assert.equal(await require("../models/user").countDocuments(), 0);
+
+  const originalTrustProxy = app.get("trust proxy");
+  app.set("trust proxy", 1);
+  let forwardedProxyPost;
+  try {
+    forwardedProxyPost = await new TestClient(owner.baseUrl).request("/listings", {
+      method: "POST",
+      body: new URLSearchParams(),
+      headers: {
+        origin: "https://wonderlust-oijv.onrender.com",
+        "x-forwarded-host": "wonderlust-oijv.onrender.com",
+        "x-forwarded-proto": "https"
+      }
+    });
+  } finally {
+    app.set("trust proxy", originalTrustProxy);
+  }
+  assertStatus(forwardedProxyPost, 302);
+  assert.match(forwardedProxyPost.headers.get("location"), /^\/login\?/);
+
+  const deceptiveOrigin = await new TestClient(owner.baseUrl).request("/signup", {
+    method: "POST",
+    body: new URLSearchParams({ username: "deceptive", email: "d@example.test", password: "test-password-123" }),
+    headers: { origin: "https://wonderlust-oijv.onrender.com.attacker.example" }
+  });
+  assertStatus(deceptiveOrigin, 403);
 
   const signupAndVerify = async (client, username, email) => {
     const signup = await client.postForm("/signup", {

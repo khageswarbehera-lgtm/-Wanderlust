@@ -9,12 +9,13 @@ const authRoutes = require("./routes/authRoutes");
 const healthRoutes = require("./routes/healthrote");
 
 const errorHandler = require("./middleware/errorHandler");
-const { isProduction, sessionSecret } = require("./config/env");
+const { appOrigin, isProduction, sessionSecret } = require("./config/env");
 const imageStorage = require("./services/imageStorage");
 const requireAuth = require("./middleware/auth");
 const validateListingRequest = require("./middleware/validateListingRequest");
 const validateReviewRequest = require("./middleware/validateReviewRequest");
 const uploadImage = require("./middleware/uploadImage");
+const { createOriginValidation } = require("./middleware/validateOrigin");
 
 const app = express();
 
@@ -102,27 +103,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use((req, res, next) => {
-  if (!["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
-    return next();
-  }
-
-  const origin = req.get("origin");
-  if (!origin) return next();
-
-  try {
-    const requestOrigin = new URL(`${req.protocol}://${req.get("host")}`).origin;
-    if (new URL(origin).origin === requestOrigin) {
-      return next();
-    }
-  } catch {
-    // Reject malformed origins below.
-  }
-
-  const error = new Error("Cross-origin request rejected.");
-  error.status = 403;
-  next(error);
-});
+app.use(createOriginValidation({ appOrigin, isProduction }));
 
 // ================= HOME =================
 

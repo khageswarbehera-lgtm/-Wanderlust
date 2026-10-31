@@ -18,6 +18,7 @@ const s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
 const smtpSecureValue = process.env.SMTP_SECURE;
 const sessionSecret = process.env.SESSION_SECRET || "development-session-secret";
 const port = process.env.PORT === undefined ? 3000 : Number(process.env.PORT);
+const configuredAppOrigin = process.env.APP_ORIGIN || `http://localhost:${port}`;
 
 if (!Number.isInteger(mailPort) || mailPort < 1 || mailPort > 65535) {
   throw new Error("SMTP_PORT must be a valid TCP port.");
@@ -27,7 +28,31 @@ if (!Number.isInteger(port) || port < 1 || port > 65535) {
   throw new Error("PORT must be a valid TCP port.");
 }
 
+let appOrigin;
+try {
+  const parsedAppOrigin = new URL(configuredAppOrigin);
+  if (
+    !["http:", "https:"].includes(parsedAppOrigin.protocol) ||
+    parsedAppOrigin.username ||
+    parsedAppOrigin.password ||
+    parsedAppOrigin.pathname !== "/" ||
+    parsedAppOrigin.search ||
+    parsedAppOrigin.hash
+  ) {
+    throw new Error();
+  }
+  appOrigin = parsedAppOrigin.origin;
+} catch {
+  throw new Error("APP_ORIGIN must be an HTTP(S) origin without a path, credentials, query, or fragment.");
+}
+
 if (isProduction) {
+  if (!process.env.APP_ORIGIN) {
+    throw new Error("APP_ORIGIN is required in production.");
+  }
+  if (new URL(appOrigin).protocol !== "https:") {
+    throw new Error("APP_ORIGIN must use HTTPS in production.");
+  }
   if (!process.env.MONGODB_URI) {
     throw new Error("MONGODB_URI is required in production.");
   }
@@ -128,6 +153,7 @@ module.exports = {
   s3Endpoint,
   s3AccessKeyId,
   s3SecretAccessKey,
+  appOrigin,
   sessionSecret,
   isProduction
 };

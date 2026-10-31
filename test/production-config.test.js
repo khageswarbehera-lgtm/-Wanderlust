@@ -7,6 +7,7 @@ const loadProductionConfig = (overrides = {}) => {
   const env = {
     ...process.env,
     NODE_ENV: "production",
+    APP_ORIGIN: "https://wonderlust-oijv.onrender.com",
     IMAGE_STORAGE: "local",
     MONGODB_URI: "mongodb+srv://db.example.test/wanderlust",
     SESSION_SECRET: crypto.randomBytes(48).toString("base64url"),
@@ -42,4 +43,16 @@ test("production config requires remote MongoDB and a strong session secret", ()
   const repetitiveSessionSecret = loadProductionConfig({ SESSION_SECRET: "a".repeat(48) });
   assert.notEqual(repetitiveSessionSecret.status, 0);
   assert.match(repetitiveSessionSecret.stderr, /varied secret data/);
+
+  const missingAppOrigin = loadProductionConfig({ APP_ORIGIN: "" });
+  assert.notEqual(missingAppOrigin.status, 0);
+  assert.match(missingAppOrigin.stderr, /APP_ORIGIN is required in production/);
+
+  const insecureAppOrigin = loadProductionConfig({ APP_ORIGIN: "http://wonderlust-oijv.onrender.com" });
+  assert.notEqual(insecureAppOrigin.status, 0);
+  assert.match(insecureAppOrigin.stderr, /APP_ORIGIN must use HTTPS/);
+
+  const appOriginWithPath = loadProductionConfig({ APP_ORIGIN: "https://wonderlust-oijv.onrender.com/path" });
+  assert.notEqual(appOriginWithPath.status, 0);
+  assert.match(appOriginWithPath.stderr, /APP_ORIGIN must be an HTTP\(S\) origin/);
 });

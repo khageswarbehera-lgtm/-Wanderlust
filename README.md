@@ -47,6 +47,7 @@ Values in `.env.example` are examples, not production credentials. Keep `.env` o
 | `MONGODB_URI` | `mongodb://127.0.0.1:27017/wanderlust` outside production | MongoDB connection string, including a database name. Required in production; production rejects localhost addresses. |
 | `SESSION_SECRET` | Development-only fallback | Signs session cookies. In production, provide at least 32 bytes with varied secret data. Generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`. |
 | `PORT` | `3000` | HTTP port; must be an integer from 1 to 65535. |
+| `APP_ORIGIN` | `http://localhost:<PORT>` in development | Exact public application origin. Required in production; set to `https://wonderlust-oijv.onrender.com` on Render. |
 | `IMAGE_STORAGE` | `local` outside production; `s3` in production | Choose `local` or `s3`. |
 | `IMAGE_UPLOAD_DIRECTORY` | `public/uploads` | Local image directory. For deployment, local storage requires a persistent mounted volume. |
 | `S3_BUCKET` | — | Bucket name; required for S3 storage. |
@@ -91,13 +92,13 @@ GitHub Actions runs on pushes and pull requests. It installs dependencies with `
 ## Deployment
 
 1. Use Node.js 20.19 or newer and install with `npm ci`.
-2. Set `NODE_ENV=production`, `MONGODB_URI`, and a strong `SESSION_SECRET` through the platform's environment/secret settings.
+2. Set `NODE_ENV=production`, `APP_ORIGIN`, `MONGODB_URI`, and a strong `SESSION_SECRET` through the platform's environment/secret settings. For this Render service, set `APP_ORIGIN=https://wonderlust-oijv.onrender.com`.
 3. Configure SMTP if users need signup verification or password recovery.
 4. Configure S3-compatible storage (`S3_BUCKET`, `S3_REGION`, and `S3_PUBLIC_URL`) or explicitly select local storage on a persistent mounted volume. The production default is S3.
 5. On Render, set the service type to **Web Service**, the build command to `npm ci`, and the start command to `npm start`. Do not use `npm run dev`; it starts nodemon and is intended only for local development. The server binds to `0.0.0.0` and uses Render's injected `PORT` (falling back to `3000` locally).
 6. Route HTTPS traffic through a trusted reverse proxy.
 
-Production sessions are stored in the same MongoDB database for seven days; MongoDB TTL cleanup is used for expired sessions. Cookies are HTTP-only, secure in production, and `SameSite=Lax`. The app trusts one proxy hop in production; adjust `app.js` if the deployment topology differs. Mutating requests that include an `Origin` header are checked against the request origin. CORS is not configured. `SIGINT` and `SIGTERM` initiate HTTP and MongoDB shutdown; open connections are force-closed after the 10-second grace period.
+Production sessions are stored in the same MongoDB database for seven days; MongoDB TTL cleanup is used for expired sessions. Cookies are HTTP-only, secure in production, and `SameSite=Lax`. The app trusts one proxy hop in production; adjust `app.js` if the deployment topology differs. Mutating requests that include an `Origin` header are checked against the exact configured `APP_ORIGIN` in production and the exact request origin in development. On Render, set `APP_ORIGIN=https://wonderlust-oijv.onrender.com`; locally use `http://localhost:3000`. Proxy-forwarded protocol and host are used only when proxy trust is enabled. CORS is not configured. `SIGINT` and `SIGTERM` initiate HTTP and MongoDB shutdown; open connections are force-closed after the 10-second grace period.
 
 ## Known limitations
 
