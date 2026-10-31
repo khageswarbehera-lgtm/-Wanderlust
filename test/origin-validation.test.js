@@ -44,6 +44,23 @@ test("production origin validation accepts the exact Render origin through its H
   assert.equal(error, null);
 });
 
+test("production origin validation tolerates proxy host headers that differ from the public origin", async () => {
+  const middleware = createOriginValidation({
+    isProduction: true,
+    appOrigin: productionOrigin
+  });
+  const error = await runValidation(middleware, {
+    headers: {
+      origin: productionOrigin,
+      host: "internal-render-host",
+      "x-forwarded-host": "internal-render-host",
+      "x-forwarded-proto": "http"
+    }
+  });
+
+  assert.equal(error, null);
+});
+
 test("production origin validation rejects other hosts, protocols, and ports", async () => {
   const middleware = createOriginValidation({
     isProduction: true,

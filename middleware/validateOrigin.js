@@ -44,10 +44,9 @@ const createOriginValidation = ({ isProduction, appOrigin }) =>
     if (!suppliedOrigin) return next();
 
     const origin = parseOrigin(suppliedOrigin);
-    const requestOrigin = getRequestOrigin(req);
     const validOrigin = isProduction
-      ? origin === appOrigin && requestOrigin === appOrigin
-      : origin !== null && origin === requestOrigin;
+      ? origin === appOrigin
+      : origin !== null && origin === getRequestOrigin(req);
 
     if (validOrigin) return next();
 
