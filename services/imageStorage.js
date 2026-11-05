@@ -5,12 +5,12 @@ const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/cl
 const {
   imageStorageType,
   imageUploadDirectory,
-  s3Bucket,
-  s3PublicUrl,
-  s3Region,
-  s3Endpoint,
-  s3AccessKeyId,
-  s3SecretAccessKey
+  imageStorageBucket,
+  imageStoragePublicUrl,
+  imageStorageRegion,
+  imageStorageEndpoint,
+  imageStorageAccessKeyId,
+  imageStorageSecretAccessKey
 } = require("../config/env");
 
 const extensionByMimeType = {
@@ -22,20 +22,25 @@ const extensionByMimeType = {
 const localFilenamePattern = /^(?:[a-f\d]{8}-[a-f\d]{4}-4[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}|\d+-\d+)\.(?:jpg|jpeg|png|gif|webp)$/i;
 const generatedFilenamePattern = /^[a-f\d]{8}-[a-f\d]{4}-4[a-f\d]{3}-[89ab][a-f\d]{3}-[a-f\d]{12}\.(?:jpg|png|gif|webp)$/i;
 
-const s3Client = imageStorageType === "s3"
+const s3Client = ["s3", "r2"].includes(imageStorageType)
   ? new S3Client({
-    region: s3Region,
-    endpoint: s3Endpoint || undefined,
-    forcePathStyle: Boolean(s3Endpoint),
-    ...(s3AccessKeyId
-      ? { credentials: { accessKeyId: s3AccessKeyId, secretAccessKey: s3SecretAccessKey } }
-      : {})
-  })
+      region: imageStorageRegion,
+      endpoint: imageStorageEndpoint || undefined,
+      forcePathStyle: Boolean(imageStorageEndpoint),
+      ...(imageStorageAccessKeyId
+        ? {
+            credentials: {
+              accessKeyId: imageStorageAccessKeyId,
+              secretAccessKey: imageStorageSecretAccessKey
+            }
+          }
+        : {})
+    })
   : null;
 
 const getOwnedS3Key = (imageUrl) => {
   try {
-    const base = new URL(`${s3PublicUrl}/`);
+    const base = new URL(`${imageStoragePublicUrl}/`);
     const image = new URL(imageUrl);
     if (image.origin !== base.origin || !image.pathname.startsWith(base.pathname)) return null;
     const key = image.pathname.slice(base.pathname.length);
@@ -52,15 +57,15 @@ const store = async (file) => {
   }
 
   const key = `${crypto.randomUUID()}.${extension}`;
-  if (imageStorageType === "s3") {
+  if (imageStorageType === "s3" || imageStorageType === "r2") {
     await s3Client.send(new PutObjectCommand({
-      Bucket: s3Bucket,
+      Bucket: imageStorageBucket,
       Key: key,
       Body: file.buffer,
       ContentType: file.imageMimeType,
       CacheControl: "public, max-age=31536000, immutable"
     }));
-    return `${s3PublicUrl}/${key}`;
+    return `${imageStoragePublicUrl}/${key}`;
   }
 
   await fs.mkdir(imageUploadDirectory, { recursive: true });
@@ -69,10 +74,10 @@ const store = async (file) => {
 };
 
 const remove = async (imageUrl) => {
-  if (imageStorageType === "s3") {
+  if (imageStorageType === "s3" || imageStorageType === "r2") {
     const key = getOwnedS3Key(imageUrl);
     if (!key) return;
-    await s3Client.send(new DeleteObjectCommand({ Bucket: s3Bucket, Key: key }));
+    await s3Client.send(new DeleteObjectCommand({ Bucket: imageStorageBucket, Key: key }));
     return;
   }
 

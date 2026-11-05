@@ -9,12 +9,27 @@ const imageStorageType = process.env.IMAGE_STORAGE || (isProduction ? "s3" : "lo
 const imageUploadDirectory = path.resolve(
   process.env.IMAGE_UPLOAD_DIRECTORY || path.join(__dirname, "..", "public", "uploads")
 );
+const r2AccountId = process.env.R2_ACCOUNT_ID;
+const r2Bucket = process.env.R2_BUCKET;
+const r2PublicUrl = process.env.R2_PUBLIC_URL?.replace(/\/+$/, "");
+const r2AccessKeyId = process.env.R2_ACCESS_KEY_ID;
+const r2SecretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
 const s3Bucket = process.env.S3_BUCKET;
 const s3PublicUrl = process.env.S3_PUBLIC_URL?.replace(/\/+$/, "");
 const s3Region = process.env.S3_REGION || "us-east-1";
 const s3Endpoint = process.env.S3_ENDPOINT;
 const s3AccessKeyId = process.env.S3_ACCESS_KEY_ID;
 const s3SecretAccessKey = process.env.S3_SECRET_ACCESS_KEY;
+const imageStorageBucket = imageStorageType === "r2" ? r2Bucket : s3Bucket;
+const imageStoragePublicUrl = imageStorageType === "r2" ? r2PublicUrl : s3PublicUrl;
+const imageStorageRegion = imageStorageType === "r2" ? "auto" : s3Region;
+const imageStorageEndpoint = imageStorageType === "r2"
+  ? (r2AccountId ? `https://${r2AccountId}.r2.cloudflarestorage.com` : undefined)
+  : s3Endpoint;
+const imageStorageAccessKeyId = imageStorageType === "r2" ? r2AccessKeyId : s3AccessKeyId;
+const imageStorageSecretAccessKey = imageStorageType === "r2"
+  ? r2SecretAccessKey
+  : s3SecretAccessKey;
 const smtpSecureValue = process.env.SMTP_SECURE;
 const sessionSecret = process.env.SESSION_SECRET || "development-session-secret";
 const port = process.env.PORT === undefined ? 3000 : Number(process.env.PORT);
@@ -101,19 +116,25 @@ if (
   throw new Error("SMTP_HOST, SMTP_USER, and SMTP_PASS must be configured together.");
 }
 
-if (!["local", "s3"].includes(imageStorageType)) {
-  throw new Error("IMAGE_STORAGE must be either 'local' or 's3'.");
+if (!["local", "s3", "r2"].includes(imageStorageType)) {
+  throw new Error("IMAGE_STORAGE must be 'local', 's3', or 'r2'.");
 }
 
-if (imageStorageType === "s3") {
-  if (!s3Bucket || !s3PublicUrl) {
-    throw new Error("S3_BUCKET and S3_PUBLIC_URL are required when IMAGE_STORAGE=s3.");
+if (imageStorageType === "s3" || imageStorageType === "r2") {
+  if (!imageStorageBucket || !imageStoragePublicUrl) {
+    throw new Error(
+      imageStorageType === "r2"
+        ? "R2_BUCKET and R2_PUBLIC_URL are required when IMAGE_STORAGE=r2."
+        : "S3_BUCKET and S3_PUBLIC_URL are required when IMAGE_STORAGE=s3."
+    );
   }
   let publicUrl;
   try {
-    publicUrl = new URL(s3PublicUrl);
+    publicUrl = new URL(imageStoragePublicUrl);
   } catch {
-    throw new Error("S3_PUBLIC_URL must be a valid HTTP(S) URL.");
+    throw new Error(
+      `${imageStorageType === "r2" ? "R2_PUBLIC_URL" : "S3_PUBLIC_URL"} must be a valid HTTP(S) URL.`
+    );
   }
   if (
     !["http:", "https:"].includes(publicUrl.protocol) ||
@@ -122,14 +143,26 @@ if (imageStorageType === "s3") {
     publicUrl.search ||
     publicUrl.hash
   ) {
-    throw new Error("S3_PUBLIC_URL must be a valid HTTP(S) base URL without credentials or query values.");
+    throw new Error(
+      `${imageStorageType === "r2" ? "R2_PUBLIC_URL" : "S3_PUBLIC_URL"} must be a valid HTTP(S) base URL without credentials or query values.`
+    );
   }
   if (isProduction && publicUrl.protocol !== "https:") {
-    throw new Error("S3_PUBLIC_URL must use HTTPS in production.");
+    throw new Error(
+      `${imageStorageType === "r2" ? "R2_PUBLIC_URL" : "S3_PUBLIC_URL"} must use HTTPS in production.`
+    );
   }
 }
 
-if (Boolean(s3AccessKeyId) !== Boolean(s3SecretAccessKey)) {
+if (imageStorageType === "r2" && (!r2AccountId || !/^[a-f\d]{32}$/i.test(r2AccountId))) {
+  throw new Error("R2_ACCOUNT_ID must be a 32-character Cloudflare account ID.");
+}
+
+if (imageStorageType === "r2" && (!r2AccessKeyId || !r2SecretAccessKey)) {
+  throw new Error("R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are required when IMAGE_STORAGE=r2.");
+}
+
+if (imageStorageType === "s3" && Boolean(s3AccessKeyId) !== Boolean(s3SecretAccessKey)) {
   throw new Error("Set both S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY, or neither.");
 }
 
@@ -147,6 +180,12 @@ module.exports = {
   mailFrom: process.env.MAIL_FROM || process.env.SMTP_USER,
   imageStorageType,
   imageUploadDirectory,
+  imageStorageBucket,
+  imageStoragePublicUrl,
+  imageStorageRegion,
+  imageStorageEndpoint,
+  imageStorageAccessKeyId,
+  imageStorageSecretAccessKey,
   s3Bucket,
   s3PublicUrl,
   s3Region,

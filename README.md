@@ -10,7 +10,7 @@ Wanderlust is a server-rendered travel-listing application built with Express, E
 - Create, edit, and delete listings. Listing changes require authentication and are checked against listing ownership.
 - Add, edit, and delete reviews. Review changes require authentication and are checked against review ownership.
 - Upload one JPEG, PNG, GIF, or WebP listing image per request, up to 5 MB. Both the declared type and file signature are checked.
-- Store images locally or in an S3-compatible bucket.
+- Store images locally, in an S3-compatible bucket, or in Cloudflare R2.
 - Render validation and error feedback in the EJS interface.
 
 ## Prerequisites
@@ -19,7 +19,7 @@ Wanderlust is a server-rendered travel-listing application built with Express, E
 - npm.
 - MongoDB, either a local server for development or a reachable deployment for production.
 - SMTP credentials to use password recovery.
-- An S3-compatible bucket and its configuration for the default production image-storage mode.
+- An S3-compatible bucket or Cloudflare R2 bucket if using remote image storage.
 
 ## Installation
 
@@ -48,10 +48,15 @@ Values in `.env.example` are examples, not production credentials. Keep `.env` o
 | `SESSION_SECRET` | Development-only fallback | Signs session cookies. In production, provide at least 32 bytes with varied secret data. Generate one with `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`. |
 | `PORT` | `3000` | HTTP port; must be an integer from 1 to 65535. |
 | `APP_ORIGIN` | `http://localhost:<PORT>` in development | Exact public application origin. Required in production; set to `https://wonderlust-oijv.onrender.com` on Render. |
-| `IMAGE_STORAGE` | `local` outside production; `s3` in production | Choose `local` or `s3`. |
+| `IMAGE_STORAGE` | `local` outside production; `s3` in production | Choose `local`, `s3`, or `r2`. |
 | `IMAGE_UPLOAD_DIRECTORY` | `public/uploads` | Local image directory. For deployment, local storage requires a persistent mounted volume. |
+| `R2_ACCOUNT_ID` | — | Cloudflare account ID; required for R2 storage. Used to construct the S3 API endpoint. |
+| `R2_BUCKET` | — | R2 bucket name; required for R2 storage. |
+| `R2_PUBLIC_URL` | — | Public HTTPS base URL for images, such as a custom domain attached to the R2 bucket; required for R2 storage. |
+| `R2_ACCESS_KEY_ID` | — | R2 S3 API token access key ID; required for R2 storage. |
+| `R2_SECRET_ACCESS_KEY` | — | R2 S3 API token secret; required for R2 storage. |
 | `S3_BUCKET` | — | Bucket name; required for S3 storage. |
-| `S3_REGION` | `us-east-1` | Bucket region. |
+| `S3_REGION` | `us-east-1` | S3 bucket region. R2 uses `auto` automatically. |
 | `S3_PUBLIC_URL` | — | Public base URL for stored images; required for S3 storage and must use HTTPS in production. |
 | `S3_ENDPOINT` | — | Optional endpoint for S3-compatible providers. |
 | `S3_ACCESS_KEY_ID` | — | Optional explicit storage credentials. Set together with `S3_SECRET_ACCESS_KEY`; otherwise the AWS SDK credential provider chain is used. |
@@ -94,7 +99,7 @@ GitHub Actions runs on pushes and pull requests. It installs dependencies with `
 1. Use Node.js 20.19 or newer and install with `npm ci`.
 2. Set `NODE_ENV=production`, `APP_ORIGIN`, `MONGODB_URI`, and a strong `SESSION_SECRET` through the platform's environment/secret settings. For this Render service, set `APP_ORIGIN=https://wonderlust-oijv.onrender.com`.
 3. Configure SMTP if users need password recovery.
-4. Configure S3-compatible storage (`S3_BUCKET`, `S3_REGION`, and `S3_PUBLIC_URL`) or explicitly select local storage on a persistent mounted volume. The production default is S3.
+4. Configure Cloudflare R2 by creating a bucket and an S3 API token scoped to that bucket with object read/write access. Set `IMAGE_STORAGE=r2`, `R2_ACCOUNT_ID`, `R2_BUCKET`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_PUBLIC_URL`. Attach a custom domain to the bucket (recommended) or enable public access for an `r2.dev` URL, then use that HTTPS base URL for `R2_PUBLIC_URL`. Keep the token secret in the deployment platform's secret manager. Alternatively, configure S3-compatible storage (`S3_BUCKET`, `S3_REGION`, and `S3_PUBLIC_URL`) or explicitly select local storage on a persistent mounted volume. The production default remains S3 for backward compatibility.
 5. On Render, set the service type to **Web Service**, the build command to `npm ci`, and the start command to `npm start`. Do not use `npm run dev`; it starts nodemon and is intended only for local development. The server binds to `0.0.0.0` and uses Render's injected `PORT` (falling back to `3000` locally).
 6. Route HTTPS traffic through a trusted reverse proxy.
 
@@ -106,5 +111,6 @@ Production sessions are stored in the same MongoDB database for seven days; Mong
 - Origin checks apply only when a mutating request includes an `Origin` header. The app does not configure CORS or provide a separate CSRF-token middleware.
 - The app uses Express's in-memory session store in development unless configured otherwise; those sessions are not durable across restarts and should not be used for a multi-instance deployment. The integration suite explicitly configures a MongoDB session store against its temporary test database.
 - The test suite uses a temporary MongoDB instance and stubs email. It does not validate connectivity to a production MongoDB cluster, live SMTP delivery, S3 permissions, a deployment proxy, or a full production browser workflow.
+- New listing uploads are stored in the selected backend, but switching an existing deployment to R2 does not migrate previously stored image files. Copy existing objects and update listing image URLs before switching backends.
 - Sample listing image URLs refer to externally hosted Unsplash images; their availability is outside this application's control.
 - No platform-specific deployment manifest is included. Configure the runtime and persistent services in the chosen hosting platform.
